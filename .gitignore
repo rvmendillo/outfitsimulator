@@ -20,3 +20,4 @@ Models/.venv/
 __pycache__/
 *.pyc
 App/Info.plist
+build-output/

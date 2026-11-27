@@ -33,11 +33,11 @@ the floor.
 | Piece | Aligned by |
 | --- | --- |
 | Avatar body | Drillis & Contini segment ratios (shoulder 0.818 H, hip 0.530 H, knee 0.285 H, …); head height grows allometrically with stature (22.75 cm × (H/175)^0.4), so a 150 cm person is ~7.0 heads tall and a 190 cm person ~8.1 |
-| Your face | Eye line levelled; eye-to-chin height = half a head (pupil distance also used for front-facing photos); chin pinned to the neck; uniform scale only, so the face is never distorted |
+| Your face | Eye line levelled; eye-to-chin height = half a head (pupil distance can only make the head smaller, since it shrinks on turned heads); chin pinned to the neck; uniform scale only, so the face is never distorted; landmarks are validated against the face box and mouth, with geometric fallbacks |
 | Tops, coats, dresses | Shoulder seams → avatar shoulders (from body-pose joints for worn photos, from the garment outline for flat-lays) |
 | Trousers, skirts | Waistband (or hips) → avatar waist; full-length pieces also hem → ankle, with at most 15% anisotropy |
 | Shoes, bags, belts, scarves | Soles on the floor / handle at the hand / waist / neck; pieces cut from a photo of a person keep their size relative to that person's shoulders |
-| Hats, glasses | Brim / eye line on the head; sized relative to the photographed person's head |
+| Hats, glasses | Brim / eye line on the head; sized from head width, adjusted (−25%/+50% at most) by the photographed person's head size |
 
 Garments photographed on a person keep that person's pose, so the avatar adapts underneath: its arms
 are hidden under tops, its legs under full-length trousers, its torso narrows slightly under clothes,
@@ -88,7 +88,7 @@ pixel agreement — it measures 99.97%).
 | Suite | Where | What |
 | --- | --- | --- |
 | `OutfitCoreTests` | Linux + macOS (`swift test --package-path Packages/OutfitKit`) | geometry, anthropometry, garment & face fitting, masks/brushes, anchor estimation, colour, generator, scene, persistence |
-| `OutfitKitTests` | macOS | ImageIO/orientation, rendering, background keying, the clothing parser on real photos, garment extraction (worn + flat-lay), face landmarks, head cut-out alignment, full composites |
+| `OutfitKitTests` | macOS and iOS Simulator | ImageIO/orientation, rendering, background keying, the clothing parser on real photos, garment extraction (worn + flat-lay), face landmarks and their validation, head cut-out alignment, realistic accessory sizes, full composites |
 | `OutfitSimulatorUITests` | iOS Simulator | full journey: onboarding → face → import → review/editor → closet → Studio → save → outfits → generator → profile, with screenshots |
 
 CI (`.github/workflows/ci.yml`) runs all of them, uploads UI screenshots and preview renders, and

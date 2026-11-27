@@ -26,7 +26,8 @@ final class LandmarkValidationTests: XCTestCase {
     }
 
     func testGoodChinIsKept() {
-        let contour = [(452, 267), (450, 336), (423, 399), (364, 437), (331, 448), (296, 452), (267, 420), (243, 357), (244, 289)]
+        let contour = [(452, 267), (452, 301), (450, 336), (442, 370), (423, 399), (395, 421), (364, 437), (331, 448), (296, 452),
+                       (278, 440), (267, 420), (257, 400), (249, 379), (243, 357), (238, 334), (239, 311), (244, 289)]
             .map { CGPoint(x: $0.0, y: $0.1) }
         let lips = [(264, 382), (290, 367), (336, 380), (303, 400), (285, 405)].map { CGPoint(x: $0.0, y: $0.1) }
         let chin = FaceAnalyzer.plausibleChin(eyeLeft: CGPoint(x: 261, y: 280), eyeRight: CGPoint(x: 339, y: 266),
@@ -36,7 +37,8 @@ final class LandmarkValidationTests: XCTestCase {
 
     func testCorruptedChinFallsBackToFaceBoxBottom() {
         let (l, r) = FaceAnalyzer.plausibleEyes(CGPoint(x: 322, y: 310), CGPoint(x: 332, y: 304), faceBox: simBox)
-        let contour = [(354, 281), (369, 329), (372, 340), (369, 351), (357, 351), (336, 340), (311, 319), (303, 301)]
+        let contour = [(354, 281), (357, 287), (360, 294), (364, 303), (367, 311), (368, 319), (369, 329), (372, 340), (369, 351),
+                       (357, 351), (347, 346), (336, 340), (327, 335), (318, 328), (311, 319), (306, 310), (303, 301)]
             .map { CGPoint(x: $0.0, y: $0.1) }
         let lips = [(357, 329), (363, 325), (372, 314), (371, 325), (353, 328)].map { CGPoint(x: $0.0, y: $0.1) }
         let chin = FaceAnalyzer.plausibleChin(eyeLeft: l, eyeRight: r, contour: contour, lips: lips, faceBox: simBox)

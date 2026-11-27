@@ -56,7 +56,7 @@ public enum GarmentFitter {
         case .sole:
             return symmetric(avatar.feetOuterHalfSpan, avatar.floorY)
         case .brim:
-            return symmetric(avatar.headHalfWidth * 1.18, avatar.headHeight * 0.28)
+            return symmetric(avatar.headHalfWidth * 1.35, avatar.headHeight * 0.28)
         case .eyes:
             return symmetric(avatar.headHalfWidth * 1.02, avatar.eyeY)
         case .handle:

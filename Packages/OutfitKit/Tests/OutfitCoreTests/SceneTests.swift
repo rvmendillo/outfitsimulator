@@ -102,6 +102,16 @@ final class SceneTests: XCTestCase {
         noArms.showArms = false
         let s = SceneBuilder.build(avatar: AvatarModel(profile: noArms), outfit: Outfit(name: "x"), garments: [:], face: nil, skinTone: .white)
         XCTAssertFalse(s.showsArms, "setting respected")
+        // Base layer and full torso only where nothing covers them.
+        XCTAssertTrue(scene([]).showsBaseTop && scene([]).showsBaseBottom)
+        XCTAssertEqual(scene([]).torsoScale, 1)
+        XCTAssertFalse(scene([top]).showsBaseTop)
+        XCTAssertTrue(scene([top]).showsBaseBottom)
+        XCTAssertFalse(scene([shorts]).showsBaseBottom)
+        XCTAssertEqual(scene([top]).torsoScale, SceneBuilder.dressedTorsoScale)
+        XCTAssertEqual(scene([hat]).torsoScale, 1, "accessories alone do not slim the torso")
+        XCTAssertEqual(AvatarShape.baseLayer(for: scene([top])).map(\.kind), [.baseBottom])
+        XCTAssertTrue(AvatarShape.baseLayer(for: scene([top, shorts])).isEmpty)
         let clip = AvatarShape.torsoClipRect(for: avatar)
         XCTAssertTrue(clip.contains(CGPoint(x: 0, y: avatar.hipY)))
         XCTAssertFalse(clip.contains(CGPoint(x: 0, y: avatar.kneeY)))

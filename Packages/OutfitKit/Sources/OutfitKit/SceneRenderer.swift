@@ -111,12 +111,10 @@ public enum SceneRenderer {
             ctx.addPath(part.elements.cgPath(transform: toCanvas))
             ctx.fillPath()
         }
-        if avatar.profile.showBaseLayer {
-            ctx.setFillColor(style.baseLayer.cgColor)
-            for part in AvatarShape.baseLayer(for: avatar) {
-                ctx.addPath(part.elements.cgPath(transform: toCanvas))
-                ctx.fillPath()
-            }
+        ctx.setFillColor(style.baseLayer.cgColor)
+        for part in AvatarShape.baseLayer(for: scene) {
+            ctx.addPath(part.elements.cgPath(transform: toCanvas))
+            ctx.fillPath()
         }
         ctx.restoreGState()
 

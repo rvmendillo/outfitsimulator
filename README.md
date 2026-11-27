@@ -39,6 +39,10 @@ the floor.
 | Shoes, bags, belts, scarves | Soles on the floor / handle at the hand / waist / neck; pieces cut from a photo of a person keep their size relative to that person's shoulders |
 | Hats, glasses | Brim / eye line on the head; sized relative to the photographed person's head |
 
+Garments photographed on a person keep that person's pose, so the avatar adapts underneath: its arms
+are hidden under tops, its legs under full-length trousers, its torso narrows slightly under clothes,
+and the neutral base layer only shows where nothing covers it.
+
 Every placement is a pure function in `OutfitCore` with unit tests (e.g. the placed head is one head
 height tall for every stature and photo resolution; trouser hems land at the ankle; soles touch the
 floor). Implausible measurements are clamped to realistic sizes.

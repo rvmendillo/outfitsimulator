@@ -40,11 +40,9 @@ struct OutfitCanvas: View {
             for part in AvatarShape.parts(for: scene) {
                 bodyContext.fill(Path(part.elements.cgPath(transform: toCanvas)), with: .color(skin))
             }
-            if avatar.profile.showBaseLayer {
-                let base = Color(style.baseLayer)
-                for part in AvatarShape.baseLayer(for: avatar) {
-                    bodyContext.fill(Path(part.elements.cgPath(transform: toCanvas)), with: .color(base))
-                }
+            let base = Color(style.baseLayer)
+            for part in AvatarShape.baseLayer(for: scene) {
+                bodyContext.fill(Path(part.elements.cgPath(transform: toCanvas)), with: .color(base))
             }
             for layer in scene.layers {
                 guard let image = images[layer.content] else { continue }

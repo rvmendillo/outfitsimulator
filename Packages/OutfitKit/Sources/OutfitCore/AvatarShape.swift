@@ -124,9 +124,22 @@ public enum AvatarShape {
         CGRect(x: -2, y: -2, width: 4, height: 2 + avatar.crotchY + 0.05)
     }
 
-    /// Parts to draw for a scene (arms and head as the scene requires).
+    /// Parts to draw for a scene (arms, head and torso width as the scene requires).
     public static func parts(for scene: OutfitScene) -> [AvatarPart] {
-        parts(for: scene.avatar, includeHead: scene.drawsAvatarHead, includeArms: scene.showsArms)
+        var result = parts(for: scene.avatar, includeHead: scene.drawsAvatarHead, includeArms: scene.showsArms)
+        if scene.torsoScale != 1, let i = result.firstIndex(where: { $0.kind == .body }) {
+            let outline = bodyOutline(scene.avatar, torsoScale: scene.torsoScale)
+            result[i] = AvatarPart(kind: .body, outline: outline, elements: PathBuilder.smoothClosed(outline))
+        }
+        return result
+    }
+
+    /// Base-layer pieces a scene still shows.
+    public static func baseLayer(for scene: OutfitScene) -> [AvatarPart] {
+        guard scene.showsBaseTop || scene.showsBaseBottom else { return [] }
+        return baseLayer(for: scene.avatar).filter {
+            ($0.kind == .baseTop && scene.showsBaseTop) || ($0.kind == .baseBottom && scene.showsBaseBottom)
+        }
     }
 
     /// Neutral base layer (tank + briefs) so the avatar never looks undressed.
@@ -140,7 +153,9 @@ public enum AvatarShape {
     }
 
     /// Torso + legs outline, clockwise starting at the right side of the neck.
-    public static func bodyOutline(_ a: AvatarModel) -> [CGPoint] {
+    /// `torsoScale` narrows the shoulders, chest, waist and hips (not the neck
+    /// or legs), e.g. so the body stays hidden under photographed clothes.
+    public static func bodyOutline(_ a: AvatarModel, torsoScale: Double = 1) -> [CGPoint] {
         let neckTop = a.chinY - 0.025
         var right: [CGPoint] = [
             CGPoint(x: a.neckHalfWidth * 0.94, y: neckTop),
@@ -169,6 +184,14 @@ public enum AvatarShape {
             CGPoint(x: a.kneeX - a.kneeHalfWidth, y: a.kneeY),
             CGPoint(x: max(0.012, a.kneeX - a.thighHalfWidth * 0.8), y: a.crotchY + 0.07),
         ]
+        if torsoScale != 1 {
+            // Points 3...11 are the shoulders down to the hips.
+            for i in 3...11 {
+                let p = right[i]
+                let floorX = i <= 4 ? a.neckHalfWidth * 1.1 : 0
+                right[i] = CGPoint(x: max(Double(p.x) * torsoScale, floorX), y: Double(p.y))
+            }
+        }
         // Keep the inner leg edges from crossing the centre line.
         right = right.map { CGPoint(x: max(Double($0.x), 0.004), y: Double($0.y)) }
         let crotch = CGPoint(x: 0, y: a.crotchY)

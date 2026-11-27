@@ -1,26 +1,8 @@
 #if canImport(Vision)
 import CoreGraphics
-import CoreML
 import CoreVideo
 import Foundation
 import Vision
-
-enum VisionCompute {
-    /// The iOS Simulator's accelerated Vision path returns corrupted landmarks
-    /// (e.g. pupils a few pixels apart); the CPU path is correct. Devices and
-    /// macOS keep their default (Neural Engine / GPU) devices.
-    static func configure(_ request: VNRequest) {
-        #if targetEnvironment(simulator)
-        if let stages = try? request.supportedComputeStageDevices {
-            for (stage, devices) in stages {
-                if let cpu = devices.first(where: { $0 is MLCPUComputeDevice }) {
-                    request.setComputeDevice(cpu, for: stage)
-                }
-            }
-        }
-        #endif
-    }
-}
 
 /// Body joints via `VNDetectHumanBodyPoseRequest`.
 public enum PoseDetector {
@@ -28,7 +10,6 @@ public enum PoseDetector {
     /// (top-left origin). Left/right are image-left/right.
     public static func detect(in image: CGImage, minimumConfidence: Float = 0.25) throws -> PoseJoints? {
         let request = VNDetectHumanBodyPoseRequest()
-        VisionCompute.configure(request)
         let handler = VNImageRequestHandler(cgImage: image, orientation: .up, options: [:])
         try handler.perform([request])
         guard let observations = request.results, !observations.isEmpty else { return nil }
@@ -98,7 +79,6 @@ public enum FaceAnalyzer {
     /// Landmarks of the largest face, or nil when no face is found.
     public static func detect(in image: CGImage) throws -> FaceLandmarks? {
         let request = VNDetectFaceLandmarksRequest()
-        VisionCompute.configure(request)
         let handler = VNImageRequestHandler(cgImage: image, orientation: .up, options: [:])
         try handler.perform([request])
         guard let faces = request.results, !faces.isEmpty else { return nil }
@@ -176,7 +156,7 @@ public enum FaceAnalyzer {
     }
 
     /// The chin (menton), validated against facial anatomy. Candidates, in
-    /// order: lowest jaw-contour point, bottom of the face box, and an estimate
+    /// order: middle of the jaw contour, its lowest point, bottom of the face box, and an estimate
     /// from the mouth; the first that is below the mouth, inside the (slightly
     /// enlarged) face box and at a plausible distance from the eyes wins.
     static func plausibleChin(eyeLeft: CGPoint, eyeRight: CGPoint, contour: [CGPoint], lips: [CGPoint], faceBox: CGRect) -> CGPoint {
@@ -198,6 +178,8 @@ public enum FaceAnalyzer {
             return box.contains(p) && plausibleChinRatio.contains(h / ipd)
         }
         var candidates: [CGPoint] = []
+        // Vision's jaw contour runs ear to ear with the chin in the middle.
+        if contour.count >= 5 { candidates.append(contour[contour.count / 2]) }
         if let lowest = contour.max(by: { heightBelowEyes($0) < heightBelowEyes($1) }) { candidates.append(lowest) }
         candidates.append(CGPoint(x: faceBox.midX, y: faceBox.maxY))
         if !lips.isEmpty {
@@ -217,7 +199,6 @@ public enum PersonSegmenter {
     /// Soft person mask at the image's size, or nil if no person is found.
     public static func matte(for image: CGImage) throws -> AlphaMask? {
         let request = VNGeneratePersonSegmentationRequest()
-        VisionCompute.configure(request)
         request.qualityLevel = .accurate
         request.outputPixelFormat = kCVPixelFormatType_OneComponent8
         let handler = VNImageRequestHandler(cgImage: image, orientation: .up, options: [:])
@@ -233,7 +214,6 @@ public enum SubjectSegmenter {
     /// One soft mask per foreground instance, each at the image's size.
     public static func instanceMasks(for image: CGImage) throws -> [AlphaMask] {
         let request = VNGenerateForegroundInstanceMaskRequest()
-        VisionCompute.configure(request)
         let handler = VNImageRequestHandler(cgImage: image, orientation: .up, options: [:])
         try handler.perform([request])
         guard let result = request.results?.first else { return [] }

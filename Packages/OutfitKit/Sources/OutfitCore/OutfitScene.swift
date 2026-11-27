@@ -47,6 +47,12 @@ public struct OutfitScene: Equatable, Sendable {
     public var showsArms: Bool = true
     /// Avatar legs are hidden under full-length trousers/skirts for the same reason.
     public var showsLegs: Bool = true
+    /// Base-layer pieces are only drawn where no garment covers that part.
+    public var showsBaseTop: Bool = true
+    public var showsBaseBottom: Bool = true
+    /// Torso width factor: slimmer under clothes so photographed garments
+    /// (which never match the avatar's exact silhouette) cover it fully.
+    public var torsoScale: Double = 1
 
     /// Union of the avatar and every layer, in body space.
     public var bounds: CGRect {
@@ -95,6 +101,7 @@ public enum SceneBuilder {
         }
         let worn = outfit.items.compactMap { garments[$0.garmentID] }
         let coversUpperBody = worn.contains { [.top, .outerwear, .dress].contains($0.category) }
+        let coversLowerBody = worn.contains { [.bottom, .dress].contains($0.category) }
         let coversLegs = worn.contains { $0.category == .bottom && $0.anchors.fitsLength }
         var drawsAvatarHead = true
         if let face, face.imageSize.width > 0, face.imageSize.height > 0,
@@ -105,8 +112,14 @@ public enum SceneBuilder {
         }
         layers.sort { $0.zIndex < $1.zIndex }
         return OutfitScene(avatar: avatar, layers: layers, drawsAvatarHead: drawsAvatarHead, skinTone: skinTone,
-                           showsArms: avatar.profile.showArms && !coversUpperBody, showsLegs: !coversLegs)
+                           showsArms: avatar.profile.showArms && !coversUpperBody, showsLegs: !coversLegs,
+                           showsBaseTop: avatar.profile.showBaseLayer && !coversUpperBody,
+                           showsBaseBottom: avatar.profile.showBaseLayer && !coversLowerBody,
+                           torsoScale: (coversUpperBody || coversLowerBody) ? dressedTorsoScale : 1)
     }
+
+    /// How much the torso narrows under clothes.
+    public static let dressedTorsoScale = 0.86
 
     /// z value that moves `garmentID` one step forward (+1) or backward (-1)
     /// past its neighbour in the current scene, or nil if it is already at the end.

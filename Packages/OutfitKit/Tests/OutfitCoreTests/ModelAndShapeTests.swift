@@ -115,6 +115,18 @@ final class AvatarShapeTests: XCTestCase {
         }
     }
 
+    func testDressedTorsoIsNarrowerButNeckAndLegsAreNot() {
+        let a = AvatarModel(profile: BodyProfile(heightCM: 172))
+        let full = AvatarShape.bodyOutline(a)
+        let slim = AvatarShape.bodyOutline(a, torsoScale: 0.86)
+        XCTAssertEqual(full.count, slim.count)
+        XCTAssertEqual(slim.map { Double($0.x) }.max()!, a.shoulderHalfWidth * 0.86, accuracy: 1e-9)
+        // Neck (first points) and feet are unchanged.
+        XCTAssertEqual(full[0], slim[0])
+        XCTAssertEqual(full.map(\.y).max(), slim.map(\.y).max())
+        XCTAssertTrue(slim.contains(CGPoint(x: a.ankleX + a.footHalfWidth * 0.7, y: a.floorY)))
+    }
+
     func testArmsHangBesideTheBody() {
         let a = AvatarModel(profile: BodyProfile(heightCM: 172))
         let parts = AvatarShape.parts(for: a, includeHead: true)

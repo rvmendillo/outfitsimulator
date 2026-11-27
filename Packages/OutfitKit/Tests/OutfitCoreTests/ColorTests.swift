@@ -54,6 +54,9 @@ final class ColorTests: XCTestCase {
         XCTAssertEqual(ColorNaming.name(for: SRGBColor(hex: "#D01818")!), "Red")
         XCTAssertEqual(ColorNaming.name(for: SRGBColor(hex: "#FAFAFA")!), "White")
         XCTAssertEqual(ColorNaming.name(for: SRGBColor(hex: "#0A0A0A")!), "Black")
+        // Muted browns (e.g. suede in overcast light) are not called gray.
+        XCTAssertEqual(ColorNaming.name(for: SRGBColor(hex: "#7D6A58")!), "Taupe")
+        XCTAssertNotEqual(ColorNaming.name(for: SRGBColor(hex: "#9A8068")!), "Gray")
         XCTAssertTrue(ColorNaming.isNeutral(SRGBColor(hex: "#808080")!))
         XCTAssertTrue(ColorNaming.isNeutral(SRGBColor(hex: "#5B7DA8")!)) // denim
         XCTAssertFalse(ColorNaming.isNeutral(SRGBColor(hex: "#E0218A")!))

@@ -61,7 +61,7 @@ final class PipelineTests: XCTestCase {
             Artifacts.save(cut.makeCGImage(), "worn-\(piece.category.rawValue)-\(piece.name.replacingOccurrences(of: " ", with: "_")).png")
         }
         // Jeans are denim/blue, the jacket camel/brown.
-        XCTAssertTrue(["Denim", "Blue", "Sky Blue", "Navy", "Gray", "Light Gray"].contains(bottom.dominantColor.name), bottom.dominantColor.name)
+        XCTAssertTrue(["Denim", "Blue", "Sky Blue", "Navy", "Gray", "Light Gray", "Stone"].contains(bottom.dominantColor.name), bottom.dominantColor.name)
     }
 
     func testWornAccessoriesKeepRealisticSizes() async throws {

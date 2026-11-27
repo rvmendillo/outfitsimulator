@@ -135,13 +135,13 @@ final class FittingTests: XCTestCase {
     func testAccessoriesFromAPhotoKeepTheirSizeRelativeToThePerson() {
         // A hat photographed on a person whose head was 200 px tall must come out
         // as wide (relative to the avatar's head) as it was relative to theirs.
-        // Brim 208 px wide on a head 260 px tall: 0.8 head heights ≈ 1.21 head
-        // widths, consistent with the default brim target, so it is used as is.
+        // Hat 208 px wide on a head 230 px tall: 0.9 head heights ≈ 1.37 head
+        // widths, consistent with the default target, so it is used as is.
         var hat = anchors(CGPoint(x: 0.1, y: 0.9), CGPoint(x: 0.9, y: 0.9), level: .brim)
-        hat.sourceHeadHeight = 260
+        hat.sourceHeadHeight = 230
         let size = CGSize(width: 260, height: 180)
         let fit = GarmentFitter.autoFit(anchors: hat, imageSize: size, category: .hat, avatar: avatar)
-        XCTAssertEqual(fit.meanScale, avatar.headHeight / 260, accuracy: 1e-12)
+        XCTAssertEqual(fit.meanScale, avatar.headHeight / 230, accuracy: 1e-12)
 
         // An implausible head measurement can only move the size within -25%/+50%.
         var tiny = hat

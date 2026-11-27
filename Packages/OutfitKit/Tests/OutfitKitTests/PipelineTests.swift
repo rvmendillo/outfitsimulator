@@ -74,8 +74,8 @@ final class PipelineTests: XCTestCase {
     // MARK: Flat-lay
 
     func testSeparatesItemsLaidOutOnAPlainBackground() throws {
-        let navy = RGBColor(hex: "#1F2A44")!, tan = RGBColor(hex: "#C9A06A")!
-        let image = makeBitmap(width: 900, height: 700, background: RGBColor(hex: "#F4F2EE")!) { ctx in
+        let navy = SRGBColor(hex: "#1F2A44")!, tan = SRGBColor(hex: "#C9A06A")!
+        let image = makeBitmap(width: 900, height: 700, background: SRGBColor(hex: "#F4F2EE")!) { ctx in
             // T-shirt
             ctx.setFillColor(navy.cgColor)
             let shirt = CGMutablePath()
@@ -108,7 +108,7 @@ final class PipelineTests: XCTestCase {
     }
 
     func testEmptyPhotoFindsNothing() throws {
-        let image = makeBitmap(width: 300, height: 300, background: RGBColor(hex: "#EEEEEE")!) { _ in }
+        let image = makeBitmap(width: 300, height: 300, background: SRGBColor(hex: "#EEEEEE")!) { _ in }
         let result = try GarmentExtractor(parser: nil).extract(from: image)
         XCTAssertEqual(result.kind, .nothingFound)
         XCTAssertTrue(result.pieces.isEmpty)
@@ -129,7 +129,7 @@ final class PipelineTests: XCTestCase {
     }
 
     func testNoFaceThrows() throws {
-        let image = makeBitmap(width: 400, height: 400, background: RGBColor(hex: "#C0C0C0")!) { _ in }
+        let image = makeBitmap(width: 400, height: 400, background: SRGBColor(hex: "#C0C0C0")!) { _ in }
         XCTAssertThrowsError(try HeadExtractor(parser: nil).extract(from: image)) { error in
             XCTAssertEqual(error as? HeadExtractionError, .noFace)
         }
@@ -197,14 +197,14 @@ final class PipelineTests: XCTestCase {
             XCTAssertFalse(scene.drawsAvatarHead)
             XCTAssertEqual(scene.layers.count, outfit.items.count + 1)
             let image = SceneRenderer.render(scene: scene, images: images, size: CGSize(width: 600, height: 1000),
-                                             background: RGBColor(hex: "#F7F3EE")!, style: AvatarStyle(skin: head.skinTone))
+                                             background: SRGBColor(hex: "#F7F3EE")!, style: AvatarStyle(skin: head.skinTone))
             XCTAssertNotNil(image)
             Artifacts.save(image, "composite-\(shape.rawValue)-\(Int(height)).png")
         }
     }
 }
 
-private extension RGBColor {
+private extension SRGBColor {
     var name: String { ColorNaming.name(for: self) }
 }
 #endif

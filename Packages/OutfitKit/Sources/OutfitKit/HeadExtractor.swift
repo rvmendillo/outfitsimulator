@@ -44,7 +44,7 @@ public struct HeadCutout: @unchecked Sendable {
     public var eyeLeft: CGPoint
     public var eyeRight: CGPoint
     public var chin: CGPoint
-    public var skinTone: RGBColor
+    public var skinTone: SRGBColor
     public var yawDegrees: Double?
     public var rollDegrees: Double?
     public var pitchDegrees: Double?
@@ -206,11 +206,11 @@ public final class HeadExtractor: @unchecked Sendable {
     }
 
     /// Median colour of the cheeks (below the eyes, beside the nose).
-    static func sampleSkin(bitmap: RGBABitmap, face: FaceLandmarks, faceMask: AlphaMask?) -> RGBColor? {
+    static func sampleSkin(bitmap: RGBABitmap, face: FaceLandmarks, faceMask: AlphaMask?) -> SRGBColor? {
         let ipd = max(face.interpupillaryDistance, 6)
         let cheekY = Double(face.eyeMidpoint.y) + 0.42 * face.eyeToChin
         let radius = 0.2 * ipd
-        var samples: [RGBColor] = []
+        var samples: [SRGBColor] = []
         for eye in [face.eyeLeft, face.eyeRight] {
             let cx = Double(eye.x)
             let minX = max(0, Int(cx - radius)), maxX = min(bitmap.width - 1, Int(cx + radius))

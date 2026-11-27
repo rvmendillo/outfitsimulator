@@ -19,8 +19,8 @@ public struct ExtractedPiece: Identifiable, @unchecked Sendable {
     /// Soft mask over `source`.
     public var mask: AlphaMask
     public var anchors: GarmentAnchors
-    public var dominantColor: RGBColor
-    public var palette: [RGBColor]
+    public var dominantColor: SRGBColor
+    public var palette: [SRGBColor]
     /// Share of the photo the piece covers (0...1).
     public var areaFraction: Double
     public var origin: Origin
@@ -226,7 +226,7 @@ public final class GarmentExtractor: @unchecked Sendable {
         let anchors = AnchorEstimator.estimate(category: category, mask: mask, pose: localPose)
         let cutout = CutoutComposer.compose(source: source, mask: mask)
         let swatches = ColorPalette.dominantColors(samples: CutoutComposer.colorSamples(cutout), k: 3)
-        let dominant = swatches.first?.color ?? RGBColor(r: 0.5, g: 0.5, b: 0.5)
+        let dominant = swatches.first?.color ?? SRGBColor(r: 0.5, g: 0.5, b: 0.5)
         let colorName = ColorNaming.name(for: dominant)
         return ExtractedPiece(
             category: category,

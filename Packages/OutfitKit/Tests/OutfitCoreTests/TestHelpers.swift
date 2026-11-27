@@ -22,7 +22,7 @@ extension AlphaMask {
 func makeGarment(
     id: UUID = UUID(),
     category: GarmentCategory,
-    color: RGBColor = .white,
+    color: SRGBColor = .white,
     size: CGSize = CGSize(width: 400, height: 500),
     anchors: GarmentAnchors? = nil
 ) -> Garment {

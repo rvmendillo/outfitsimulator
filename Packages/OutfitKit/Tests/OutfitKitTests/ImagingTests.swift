@@ -7,8 +7,8 @@ import XCTest
 @testable import OutfitKit
 
 final class ImagingTests: XCTestCase {
-    let red = RGBColor(r: 1, g: 0, b: 0)
-    let blue = RGBColor(r: 0, g: 0, b: 1)
+    let red = SRGBColor(r: 1, g: 0, b: 0)
+    let blue = SRGBColor(r: 0, g: 0, b: 1)
 
     func testExifOrientationIsApplied() throws {
         // Stored 40x20: left half red, right half blue. Orientation 6 means
@@ -107,8 +107,8 @@ final class ImagingTests: XCTestCase {
     }
 
     func testBackgroundKeyerSeparatesObjects() throws {
-        let navy = RGBColor(hex: "#1F2A44")!
-        let image = makeBitmap(width: 600, height: 400, background: RGBColor(hex: "#F2F0EC")!) { ctx in
+        let navy = SRGBColor(hex: "#1F2A44")!
+        let image = makeBitmap(width: 600, height: 400, background: SRGBColor(hex: "#F2F0EC")!) { ctx in
             ctx.setFillColor(navy.cgColor)
             ctx.fill(CGRect(x: 60, y: 80, width: 180, height: 240))
             ctx.setFillColor(self.red.cgColor)
@@ -151,7 +151,7 @@ final class ImagingTests: XCTestCase {
         let anchors = GarmentAnchors(left: CGPoint(x: 0, y: 0), right: CGPoint(x: 1, y: 0), hemY: 1, fitsLength: false, level: .shoulders, source: .user)
         let garment = Garment(name: "Test", category: .top, imageFile: "t.png", imageSize: CGSize(width: 200, height: 260), anchors: anchors, dominantColor: red)
         let outfit = Outfit(name: "o", items: [OutfitItem(garmentID: garment.id)])
-        let skin = RGBColor(hex: "#D9A784")!
+        let skin = SRGBColor(hex: "#D9A784")!
         let scene = SceneBuilder.build(avatar: avatar, outfit: outfit, garments: [garment.id: garment], face: nil, skinTone: skin)
         let size = CGSize(width: 400, height: 640)
         let bodyRect = CanvasMapping.standardBodyRect(for: avatar)
@@ -160,7 +160,7 @@ final class ImagingTests: XCTestCase {
         Artifacts.save(rendered, "render-orientation.png")
         let bitmap = try XCTUnwrap(RGBABitmap(cgImage: rendered))
         let mapping = CanvasMapping(bodyRect: bodyRect, canvasSize: size, padding: 0.04)
-        func sample(_ body: CGPoint) throws -> RGBColor {
+        func sample(_ body: CGPoint) throws -> SRGBColor {
             let p = mapping.toCanvas(body)
             return try XCTUnwrap(bitmap.rgb(Int(p.x), Int(p.y)))
         }
@@ -175,7 +175,7 @@ final class ImagingTests: XCTestCase {
         // Legs are skin, the corner is background.
         let knee = try sample(CGPoint(x: avatar.kneeX, y: avatar.kneeY))
         XCTAssertLessThan(knee.lab.distance(to: skin.lab), 2)
-        XCTAssertLessThan(try XCTUnwrap(bitmap.rgb(2, 2)).lab.distance(to: RGBColor.white.lab), 1)
+        XCTAssertLessThan(try XCTUnwrap(bitmap.rgb(2, 2)).lab.distance(to: SRGBColor.white.lab), 1)
         // The avatar's own head is drawn (no face photo).
         let headCenter = try sample(CGPoint(x: 0, y: avatar.headHeight / 2))
         XCTAssertLessThan(headCenter.lab.distance(to: skin.lab), 2)

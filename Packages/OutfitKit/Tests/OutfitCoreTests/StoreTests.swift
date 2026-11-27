@@ -18,8 +18,8 @@ final class StoreTests: XCTestCase {
 
     func testRoundTripPersistsEverything() throws {
         let store = try WardrobeStore(rootURL: root)
-        var garment = makeGarment(category: .top, color: RGBColor(hex: "#1F2A44")!)
-        garment.palette = [RGBColor(hex: "#1F2A44")!, .white]
+        var garment = makeGarment(category: .top, color: SRGBColor(hex: "#1F2A44")!)
+        garment.palette = [SRGBColor(hex: "#1F2A44")!, .white]
         garment.notes = "Linen"
         try store.writeBlob(Data([1, 2, 3]), named: garment.imageFile)
         try store.upsertGarment(garment)
@@ -28,7 +28,7 @@ final class StoreTests: XCTestCase {
         try store.upsertOutfit(outfit)
         var profile = UserProfile(body: BodyProfile(heightCM: 181, shape: .masculine, build: 1.1), units: .imperial, hasCompletedOnboarding: true)
         profile.face = FaceAsset(imageFile: "face-1.png", imageSize: CGSize(width: 300, height: 400), eyeLeft: CGPoint(x: 100, y: 150),
-                                 eyeRight: CGPoint(x: 180, y: 150), chin: CGPoint(x: 140, y: 290), skinTone: RGBColor(hex: "#C8946E")!,
+                                 eyeRight: CGPoint(x: 180, y: 150), chin: CGPoint(x: 140, y: 290), skinTone: SRGBColor(hex: "#C8946E")!,
                                  yawDegrees: 4, rollDegrees: -2, pitchDegrees: 1)
         try store.updateProfile(profile)
 

@@ -10,14 +10,14 @@ final class OutfitGeneratorTests: XCTestCase {
         var items: [GarmentSummary] = []
         let tops = ["#FFFFFF", "#1F2A44", "#C62828", "#9CAF88"]
         let bottoms = ["#5B7DA8", "#151515", "#D6C3A3"]
-        for hex in tops { items.append(GarmentSummary(id: UUID(), category: .top, color: RGBColor(hex: hex)!)) }
-        for hex in bottoms { items.append(GarmentSummary(id: UUID(), category: .bottom, color: RGBColor(hex: hex)!)) }
-        items.append(GarmentSummary(id: UUID(), category: .dress, color: RGBColor(hex: "#6D1A2B")!))
-        items.append(GarmentSummary(id: UUID(), category: .shoes, color: RGBColor(hex: "#F4F4F2")!))
-        items.append(GarmentSummary(id: UUID(), category: .shoes, color: RGBColor(hex: "#6B4428")!))
-        items.append(GarmentSummary(id: UUID(), category: .outerwear, color: RGBColor(hex: "#B98B5B")!))
-        items.append(GarmentSummary(id: UUID(), category: .bag, color: RGBColor(hex: "#151515")!))
-        items.append(GarmentSummary(id: UUID(), category: .hat, color: RGBColor(hex: "#3B3B3F")!))
+        for hex in tops { items.append(GarmentSummary(id: UUID(), category: .top, color: SRGBColor(hex: hex)!)) }
+        for hex in bottoms { items.append(GarmentSummary(id: UUID(), category: .bottom, color: SRGBColor(hex: hex)!)) }
+        items.append(GarmentSummary(id: UUID(), category: .dress, color: SRGBColor(hex: "#6D1A2B")!))
+        items.append(GarmentSummary(id: UUID(), category: .shoes, color: SRGBColor(hex: "#F4F4F2")!))
+        items.append(GarmentSummary(id: UUID(), category: .shoes, color: SRGBColor(hex: "#6B4428")!))
+        items.append(GarmentSummary(id: UUID(), category: .outerwear, color: SRGBColor(hex: "#B98B5B")!))
+        items.append(GarmentSummary(id: UUID(), category: .bag, color: SRGBColor(hex: "#151515")!))
+        items.append(GarmentSummary(id: UUID(), category: .hat, color: SRGBColor(hex: "#3B3B3F")!))
         return items
     }
 
@@ -116,7 +116,7 @@ final class OutfitGeneratorTests: XCTestCase {
     func testLargeClosetUsesSamplingAndStaysValid() {
         var items: [GarmentSummary] = []
         var rng = SeededGenerator(seed: 1)
-        func randomColor() -> RGBColor { RGBColor(r: rng.nextUnit(), g: rng.nextUnit(), b: rng.nextUnit()) }
+        func randomColor() -> SRGBColor { SRGBColor(r: rng.nextUnit(), g: rng.nextUnit(), b: rng.nextUnit()) }
         for _ in 0..<40 { items.append(GarmentSummary(id: UUID(), category: .top, color: randomColor())) }
         for _ in 0..<30 { items.append(GarmentSummary(id: UUID(), category: .bottom, color: randomColor())) }
         for _ in 0..<10 { items.append(GarmentSummary(id: UUID(), category: .shoes, color: randomColor())) }

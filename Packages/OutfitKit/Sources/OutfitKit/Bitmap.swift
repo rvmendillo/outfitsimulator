@@ -81,11 +81,11 @@ public struct RGBABitmap: Sendable {
     }
 
     /// Un-premultiplied colour of a pixel (nil when fully transparent).
-    public func color(x: Int, y: Int) -> RGBColor? {
+    public func color(x: Int, y: Int) -> SRGBColor? {
         let i = (y * width + x) * 4
         let a = Double(pixels[i + 3])
         guard a > 0 else { return nil }
-        return RGBColor(r: Double(pixels[i]) / a, g: Double(pixels[i + 1]) / a, b: Double(pixels[i + 2]) / a)
+        return SRGBColor(r: Double(pixels[i]) / a, g: Double(pixels[i + 1]) / a, b: Double(pixels[i + 2]) / a)
     }
 
     public func cropped(to rect: PixelRect) -> RGBABitmap {
@@ -256,14 +256,14 @@ public enum CutoutComposer {
     }
 
     /// Colour samples from the clearly opaque part of a cut-out (for palettes).
-    public static func colorSamples(_ bitmap: RGBABitmap, maxSamples: Int = 4000, minimumAlpha: UInt8 = 220) -> [RGBColor] {
+    public static func colorSamples(_ bitmap: RGBABitmap, maxSamples: Int = 4000, minimumAlpha: UInt8 = 220) -> [SRGBColor] {
         let total = bitmap.width * bitmap.height
         guard total > 0 else { return [] }
         var opaque = 0
         for i in 0..<total where bitmap.pixels[i * 4 + 3] >= minimumAlpha { opaque += 1 }
         guard opaque > 0 else { return [] }
         let step = max(1, opaque / maxSamples)
-        var samples: [RGBColor] = []
+        var samples: [SRGBColor] = []
         samples.reserveCapacity(min(opaque, maxSamples + 1))
         var seen = 0
         for i in 0..<total where bitmap.pixels[i * 4 + 3] >= minimumAlpha {

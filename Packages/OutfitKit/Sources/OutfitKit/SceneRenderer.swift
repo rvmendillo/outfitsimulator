@@ -8,7 +8,7 @@ public extension Affine2D {
     }
 }
 
-public extension RGBColor {
+public extension SRGBColor {
     var cgColor: CGColor {
         CGColor(colorSpace: ColorSpaces.sRGB, components: [CGFloat(r), CGFloat(g), CGFloat(b), 1]) ?? CGColor(gray: 0.5, alpha: 1)
     }
@@ -36,13 +36,13 @@ public extension Array where Element == PathElement {
 
 /// Colours for drawing the avatar.
 public struct AvatarStyle: Equatable, Sendable {
-    public var skin: RGBColor
-    public var baseLayer: RGBColor
+    public var skin: SRGBColor
+    public var baseLayer: SRGBColor
     public var floorShadow: Bool
 
-    public static let baseLayerColor = RGBColor(hex: "#3A3542")!
+    public static let baseLayerColor = SRGBColor(hex: "#3A3542")!
 
-    public init(skin: RGBColor, baseLayer: RGBColor = AvatarStyle.baseLayerColor, floorShadow: Bool = true) {
+    public init(skin: SRGBColor, baseLayer: SRGBColor = AvatarStyle.baseLayerColor, floorShadow: Bool = true) {
         self.skin = skin
         self.baseLayer = baseLayer
         self.floorShadow = floorShadow
@@ -57,7 +57,7 @@ public enum SceneRenderer {
         images: [SceneLayer.Content: CGImage],
         size: CGSize,
         bodyRect: CGRect? = nil,
-        background: RGBColor? = nil,
+        background: SRGBColor? = nil,
         style: AvatarStyle,
         padding: Double = 0.04
     ) -> CGImage? {

@@ -29,7 +29,7 @@ public enum BackgroundKeyer {
         // Sample the border.
         let band = max(2, min(w, h) / 40)
         var borderLabs: [LabColor] = []
-        var borderColors: [RGBColor] = []
+        var borderColors: [SRGBColor] = []
         let step = max(1, (2 * (w + h) * band) / 3000)
         var counter = 0
         for y in 0..<h {

@@ -175,8 +175,8 @@ public struct Garment: Codable, Equatable, Identifiable, Sendable {
     /// Cut-out size in pixels.
     public var imageSize: CGSize
     public var anchors: GarmentAnchors
-    public var dominantColor: RGBColor
-    public var palette: [RGBColor]
+    public var dominantColor: SRGBColor
+    public var palette: [SRGBColor]
     public var favorite: Bool
     public var notes: String
     public var createdAt: Date
@@ -191,8 +191,8 @@ public struct Garment: Codable, Equatable, Identifiable, Sendable {
         thumbnailFile: String? = nil,
         imageSize: CGSize,
         anchors: GarmentAnchors,
-        dominantColor: RGBColor,
-        palette: [RGBColor] = [],
+        dominantColor: SRGBColor,
+        palette: [SRGBColor] = [],
         favorite: Bool = false,
         notes: String = "",
         createdAt: Date = Date()
@@ -303,7 +303,7 @@ public struct FaceAsset: Codable, Equatable, Sendable {
     public var eyeLeft: CGPoint
     public var eyeRight: CGPoint
     public var chin: CGPoint
-    public var skinTone: RGBColor
+    public var skinTone: SRGBColor
     /// Fine-tuning applied after automatic alignment.
     public var adjustment: ItemAdjustment
     /// Head pose of the source photo in degrees, for user feedback.
@@ -317,7 +317,7 @@ public struct FaceAsset: Codable, Equatable, Sendable {
         eyeLeft: CGPoint,
         eyeRight: CGPoint,
         chin: CGPoint,
-        skinTone: RGBColor,
+        skinTone: SRGBColor,
         adjustment: ItemAdjustment = .identity,
         yawDegrees: Double? = nil,
         rollDegrees: Double? = nil,
@@ -355,7 +355,7 @@ public struct UserProfile: Codable, Equatable, Sendable {
     }
 
     /// Skin tone used for the avatar body.
-    public var effectiveSkinTone: RGBColor {
+    public var effectiveSkinTone: SRGBColor {
         body.skinToneOverride ?? face?.skinTone ?? BodyProfile.defaultSkinTone
     }
 }

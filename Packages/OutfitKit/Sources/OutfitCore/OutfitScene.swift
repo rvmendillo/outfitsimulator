@@ -41,7 +41,7 @@ public struct OutfitScene: Equatable, Sendable {
     public var layers: [SceneLayer]
     /// True when no face photo is used, so the avatar's own head is drawn.
     public var drawsAvatarHead: Bool
-    public var skinTone: RGBColor
+    public var skinTone: SRGBColor
 
     /// Union of the avatar and every layer, in body space.
     public var bounds: CGRect {
@@ -76,7 +76,7 @@ public enum SceneBuilder {
         return category.baseZ
     }
 
-    public static func build(avatar: AvatarModel, outfit: Outfit, garments: [UUID: Garment], face: FaceAsset?, skinTone: RGBColor) -> OutfitScene {
+    public static func build(avatar: AvatarModel, outfit: Outfit, garments: [UUID: Garment], face: FaceAsset?, skinTone: SRGBColor) -> OutfitScene {
         var layers: [SceneLayer] = []
         for (index, item) in outfit.items.enumerated() {
             guard let garment = garments[item.garmentID] else { continue }

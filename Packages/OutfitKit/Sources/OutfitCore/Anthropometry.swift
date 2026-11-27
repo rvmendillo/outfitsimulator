@@ -28,20 +28,20 @@ public struct BodyProfile: Codable, Equatable, Sendable {
     /// Width multiplier for torso and limbs (slim < 1 < broad).
     public var build: Double
     /// Overrides the skin tone sampled from the face photo.
-    public var skinToneOverride: RGBColor?
+    public var skinToneOverride: SRGBColor?
     public var showArms: Bool
     /// Neutral base layer (tank + briefs) drawn under clothes.
     public var showBaseLayer: Bool
 
     public static let heightRange: ClosedRange<Double> = 120...220
     public static let buildRange: ClosedRange<Double> = 0.85...1.25
-    public static let defaultSkinTone = RGBColor(hex: "#D9A784")!
+    public static let defaultSkinTone = SRGBColor(hex: "#D9A784")!
 
     public init(
         heightCM: Double = 170,
         shape: BodyShape = .neutral,
         build: Double = 1.0,
-        skinToneOverride: RGBColor? = nil,
+        skinToneOverride: SRGBColor? = nil,
         showArms: Bool = true,
         showBaseLayer: Bool = true
     ) {

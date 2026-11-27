@@ -64,10 +64,10 @@ enum Artifacts {
 
 extension RGBABitmap {
     /// Un-premultiplied colour, or nil when transparent.
-    func rgb(_ x: Int, _ y: Int) -> RGBColor? { color(x: x, y: y) }
+    func rgb(_ x: Int, _ y: Int) -> SRGBColor? { color(x: x, y: y) }
 }
 
-func makeBitmap(width: Int, height: Int, background: RGBColor, draw: (CGContext) -> Void) -> CGImage {
+func makeBitmap(width: Int, height: Int, background: SRGBColor, draw: (CGContext) -> Void) -> CGImage {
     let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
                         space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
     ctx.setFillColor(background.cgColor)

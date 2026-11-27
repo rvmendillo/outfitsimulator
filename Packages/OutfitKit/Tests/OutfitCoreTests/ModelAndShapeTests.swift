@@ -56,7 +56,7 @@ final class ModelTests: XCTestCase {
     }
 
     func testJSONRoundTrip() throws {
-        var g = makeGarment(category: .shoes, color: RGBColor(hex: "#6B4428")!)
+        var g = makeGarment(category: .shoes, color: SRGBColor(hex: "#6B4428")!)
         g.sourceFile = "src.jpg"
         g.maskFile = "mask.png"
         let library = Library(garments: [g], outfits: [Outfit(name: "o", items: [OutfitItem(garmentID: g.id)])], profile: UserProfile(hasCompletedOnboarding: true))

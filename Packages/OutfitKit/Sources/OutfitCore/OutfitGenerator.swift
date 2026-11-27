@@ -30,9 +30,9 @@ public struct SeededGenerator: RandomNumberGenerator, Sendable {
 public struct GarmentSummary: Equatable, Sendable {
     public var id: UUID
     public var category: GarmentCategory
-    public var color: RGBColor
+    public var color: SRGBColor
 
-    public init(id: UUID, category: GarmentCategory, color: RGBColor) {
+    public init(id: UUID, category: GarmentCategory, color: SRGBColor) {
         self.id = id
         self.category = category
         self.color = color

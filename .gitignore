@@ -1,0 +1,21 @@
+# Xcode / SwiftPM
+.DS_Store
+build/
+DerivedData/
+.build/
+.swiftpm/
+*.xcodeproj/
+!*.xcodeproj/project.pbxproj
+xcuserdata/
+*.xcresult
+*.ipa
+*.dSYM.zip
+
+# Generated project (XcodeGen) and models
+OutfitSimulator.xcodeproj/
+Models/build/
+Models/.venv/
+
+# Python
+__pycache__/
+*.pyc

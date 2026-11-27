@@ -1,0 +1,8 @@
+# Pinned toolchain for converting the clothing parser to Core ML.
+# Install with: pip install -r Models/requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.0
+transformers==4.49.0
+coremltools==8.3.0
+safetensors>=0.4,<1
+pillow>=10,<12
+numpy>=1.26,<2.1

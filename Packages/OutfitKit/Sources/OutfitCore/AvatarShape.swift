@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 /// Platform-neutral path description, converted to `CGPath`/SwiftUI `Path` by
 /// the rendering layer.

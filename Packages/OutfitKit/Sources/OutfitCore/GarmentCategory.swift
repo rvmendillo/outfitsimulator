@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 /// The kinds of pieces the app understands. The raw values are persisted.
 public enum GarmentCategory: String, Codable, CaseIterable, Identifiable, Sendable {

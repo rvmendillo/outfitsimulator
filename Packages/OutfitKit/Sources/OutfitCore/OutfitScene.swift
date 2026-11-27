@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 /// One image drawn on top of the avatar.
 public struct SceneLayer: Equatable, Identifiable, Sendable {

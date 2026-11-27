@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 /// Silhouette family used for the avatar body. Only widths differ; vertical
 /// proportions come from stature.

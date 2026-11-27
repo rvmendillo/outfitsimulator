@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 public enum HeightFormatter {
     public static let centimetresPerInch = 2.54

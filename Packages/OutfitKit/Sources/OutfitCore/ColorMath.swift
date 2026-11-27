@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 /// An sRGB colour with components in 0...1.
 public struct RGBColor: Codable, Equatable, Hashable, Sendable {

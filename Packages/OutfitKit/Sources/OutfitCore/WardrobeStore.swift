@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 public enum StoreError: Error, Equatable, LocalizedError {
     case invalidFileName(String)

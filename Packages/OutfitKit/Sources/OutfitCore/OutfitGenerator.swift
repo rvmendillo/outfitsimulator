@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 /// Deterministic pseudo-random generator (SplitMix64) so suggestions are
 /// reproducible in tests and stable for a given seed.

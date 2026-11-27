@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 /// An 8-bit single-channel mask (0 = transparent, 255 = opaque), row-major,
 /// origin top-left. Used for segmentation results, cut-out alpha and brushes.

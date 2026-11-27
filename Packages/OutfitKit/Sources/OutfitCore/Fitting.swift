@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 /// Where a garment's width line (and optionally hem) must land on the avatar.
 public struct FitTarget: Equatable, Sendable {

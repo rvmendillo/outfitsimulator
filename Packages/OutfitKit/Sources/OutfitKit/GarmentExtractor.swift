@@ -26,6 +26,13 @@ public struct ExtractedPiece: Identifiable, @unchecked Sendable {
     public var origin: Origin
     /// Where `source` was cropped from, in the processed photo's pixels.
     public var cropRect: PixelRect
+    /// Body joints in `source` coordinates (photos of a person only).
+    public var pose: PoseJoints?
+
+    /// Fit guides for another category (when the user re-labels the piece).
+    public func anchors(for category: GarmentCategory) -> GarmentAnchors {
+        AnchorEstimator.estimate(category: category, mask: mask, pose: pose)
+    }
 
     /// Rebuilds the RGBA cut-out from `source` and `mask`.
     public func cutout() -> RGBABitmap {
@@ -231,7 +238,8 @@ public final class GarmentExtractor: @unchecked Sendable {
             palette: swatches.map(\.color),
             areaFraction: Double(fullMask.setCount()) / Double(max(1, bitmap.width * bitmap.height)),
             origin: origin,
-            cropRect: crop
+            cropRect: crop,
+            pose: localPose
         )
     }
 }

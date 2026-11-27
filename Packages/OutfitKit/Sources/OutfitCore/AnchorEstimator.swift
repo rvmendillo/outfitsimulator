@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 /// Estimates a garment's fit guides from its cut-out mask (and, for photos of
 /// a person wearing it, the detected body joints).

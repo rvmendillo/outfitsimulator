@@ -103,7 +103,13 @@ public enum GarmentFitter {
 
         // Accessories cut from a photo of a person keep their size relative to
         // that person (a hat relative to the head, shoes to the body).
-        if let s = referenceScale(anchors: anchors, category: category, avatar: avatar) {
+        if var s = referenceScale(anchors: anchors, category: category, avatar: avatar) {
+            if category == .hat || category == .eyewear {
+                // Head measurements in outfit photos (sunglasses, beards, turned
+                // heads) can be off; let them adjust the anthropometric default
+                // by at most -25%/+50%.
+                s = clamp(s, widthScale * 0.75, widthScale * 1.5)
+            }
             sx = s
             sy = s
         }

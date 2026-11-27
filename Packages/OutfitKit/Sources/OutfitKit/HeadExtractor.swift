@@ -82,8 +82,8 @@ public final class HeadExtractor: @unchecked Sendable {
         let skinTone = Self.sampleSkin(bitmap: bitmap, face: face, faceMask: faceLabelMask) ?? BodyProfile.defaultSkinTone
 
         // Region that can contain the head (generous, for long hair).
-        let roi = CGRect(x: Double(eyeMid.x) - 1.5 * headHeight, y: Double(eyeMid.y) - 1.1 * headHeight,
-                         width: 3 * headHeight, height: 2.9 * headHeight)
+        let roi = CGRect(x: Double(eyeMid.x) - 2.2 * headHeight, y: Double(eyeMid.y) - 1.2 * headHeight,
+                         width: 4.4 * headHeight, height: 4.2 * headHeight)
         let neckFadeStart = Double(face.chin.y) + 0.05 * headHeight
         let neckFadeEnd = Double(face.chin.y) + 0.28 * headHeight
 

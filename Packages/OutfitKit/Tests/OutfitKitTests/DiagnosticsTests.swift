@@ -25,6 +25,13 @@ final class DiagnosticsTests: XCTestCase {
             let fractions = ParserLabel.allCases.map { "\($0)=\(String(format: "%.4f", map.fraction(of: [$0])))" }
             print("DIAG labels \(fractions.joined(separator: " "))")
         }
+        let outfit = ImageCodec.downscaled(try Fixtures.image("outfit_front.jpg"), maxSide: 1600)
+        if let face = try FaceAnalyzer.detect(in: outfit) {
+            print("DIAG outfit-face bbox \(face.boundingBox) eyeL \(f(face.eyeLeft)) eyeR \(f(face.eyeRight)) chin \(f(face.chin)) eyeToChin \(Int(face.eyeToChin))")
+        }
+        if let pose = try PoseDetector.detect(in: outfit), let l = pose.shoulderL, let r = pose.shoulderR {
+            print("DIAG outfit-shoulders \(f(l)) \(f(r)) dist \(Int(l.distance(to: r)))")
+        }
         let head = try HeadExtractor(parser: try? await TestModel.parser()).extract(from: image)
         print("DIAG head \(head.image.width)x\(head.image.height) eyeL \(f(head.eyeLeft)) eyeR \(f(head.eyeRight)) chin \(f(head.chin)) warnings \(head.warnings)")
     }

@@ -160,6 +160,7 @@ public final class ClothingParser: @unchecked Sendable {
 
     public func parse(_ image: CGImage) throws -> LabelMap {
         let request = VNCoreMLRequest(model: model)
+        VisionCompute.configure(request)
         // The model was trained on images squashed to 512x512, so do the same.
         request.imageCropAndScaleOption = .scaleFill
         let handler = VNImageRequestHandler(cgImage: image, orientation: .up, options: [:])

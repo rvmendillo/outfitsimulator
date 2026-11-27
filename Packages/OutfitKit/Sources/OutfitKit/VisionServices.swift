@@ -1,8 +1,26 @@
 #if canImport(Vision)
 import CoreGraphics
+import CoreML
 import CoreVideo
 import Foundation
 import Vision
+
+enum VisionCompute {
+    /// The iOS Simulator's accelerated Vision path returns corrupted landmarks
+    /// (e.g. pupils a few pixels apart); the CPU path is correct. Devices and
+    /// macOS keep their default (Neural Engine / GPU) devices.
+    static func configure(_ request: VNRequest) {
+        #if targetEnvironment(simulator)
+        if let stages = try? request.supportedComputeStageDevices {
+            for (stage, devices) in stages {
+                if let cpu = devices.first(where: { $0 is MLCPUComputeDevice }) {
+                    request.setComputeDevice(cpu, for: stage)
+                }
+            }
+        }
+        #endif
+    }
+}
 
 /// Body joints via `VNDetectHumanBodyPoseRequest`.
 public enum PoseDetector {
@@ -10,6 +28,7 @@ public enum PoseDetector {
     /// (top-left origin). Left/right are image-left/right.
     public static func detect(in image: CGImage, minimumConfidence: Float = 0.25) throws -> PoseJoints? {
         let request = VNDetectHumanBodyPoseRequest()
+        VisionCompute.configure(request)
         let handler = VNImageRequestHandler(cgImage: image, orientation: .up, options: [:])
         try handler.perform([request])
         guard let observations = request.results, !observations.isEmpty else { return nil }
@@ -79,6 +98,7 @@ public enum FaceAnalyzer {
     /// Landmarks of the largest face, or nil when no face is found.
     public static func detect(in image: CGImage) throws -> FaceLandmarks? {
         let request = VNDetectFaceLandmarksRequest()
+        VisionCompute.configure(request)
         let handler = VNImageRequestHandler(cgImage: image, orientation: .up, options: [:])
         try handler.perform([request])
         guard let faces = request.results, !faces.isEmpty else { return nil }
@@ -103,27 +123,92 @@ public enum FaceAnalyzer {
         let pixelBox = CGRect(x: Double(box.minX) * size.width, y: (1 - Double(box.maxY)) * size.height,
                               width: Double(box.width) * size.width, height: Double(box.height) * size.height)
 
-        let eye1 = centroid(region(landmarks?.leftPupil)) ?? centroid(region(landmarks?.leftEye))
-        let eye2 = centroid(region(landmarks?.rightPupil)) ?? centroid(region(landmarks?.rightEye))
-        guard let e1 = eye1, let e2 = eye2 else { return nil }
-        let (eyeL, eyeR) = PoseJoints.ordered(e1, e2)
+        // Eyes: prefer the pupil, but only if it lies within its eye region.
+        func eye(pupil: VNFaceLandmarkRegion2D?, region eyeRegion: VNFaceLandmarkRegion2D?) -> CGPoint? {
+            let pupilPoint = centroid(region(pupil))
+            let outline = region(eyeRegion)
+            guard let center = centroid(outline) else { return pupilPoint }
+            guard let pupilPoint else { return center }
+            let xs = outline.map { Double($0.x) }, ys = outline.map { Double($0.y) }
+            let eyeWidth = xs.max()! - xs.min()!, eyeHeight = ys.max()! - ys.min()!
+            let bounds = CGRect(x: xs.min()! - 0.5 * eyeWidth, y: ys.min()! - eyeHeight - 2,
+                                width: 2 * eyeWidth, height: 3 * eyeHeight + 4)
+            return bounds.contains(pupilPoint) ? pupilPoint : center
+        }
+        let (eyeL, eyeR) = Self.plausibleEyes(eye(pupil: landmarks?.leftPupil, region: landmarks?.leftEye),
+                                              eye(pupil: landmarks?.rightPupil, region: landmarks?.rightEye),
+                                              faceBox: pixelBox)
 
         let contour = region(landmarks?.faceContour)
         let lips = region(landmarks?.outerLips)
-        var chin = contour.max { $0.y < $1.y } ?? CGPoint(x: pixelBox.midX, y: pixelBox.maxY)
-        // The chin is never above the mouth; fall back to the box bottom if the
-        // contour is clearly truncated.
-        if let lowestLip = lips.map({ Double($0.y) }).max(), Double(chin.y) < lowestLip {
-            chin = CGPoint(x: Double(chin.x), y: Double(pixelBox.maxY))
-        }
+        let chin = Self.plausibleChin(eyeLeft: eyeL, eyeRight: eyeR, contour: contour, lips: lips, faceBox: pixelBox)
 
         return FaceLandmarks(
             boundingBox: pixelBox,
-            eyeLeft: eyeL!, eyeRight: eyeR!, chin: chin,
+            eyeLeft: eyeL, eyeRight: eyeR, chin: chin,
             faceContour: contour, outerLips: lips,
             yaw: face.yaw?.doubleValue, roll: face.roll?.doubleValue, pitch: face.pitch?.doubleValue,
             faceCount: faces.count
         )
+    }
+
+    /// Eye-to-chin height over pupil distance for real adult faces.
+    static let plausibleChinRatio: ClosedRange<Double> = 1.25...2.7
+    /// Pupil distance over face-box width (front-facing ~0.4, three-quarter ~0.3).
+    static let plausibleEyeSpacing: ClosedRange<Double> = 0.18...0.62
+
+    /// Validates detected pupils against the face box; when they are missing or
+    /// implausible, uses the typical eye positions inside a Vision face box.
+    static func plausibleEyes(_ a: CGPoint?, _ b: CGPoint?, faceBox: CGRect) -> (CGPoint, CGPoint) {
+        let fallback = (CGPoint(x: faceBox.minX + 0.3 * faceBox.width, y: faceBox.minY + 0.3 * faceBox.height),
+                        CGPoint(x: faceBox.minX + 0.7 * faceBox.width, y: faceBox.minY + 0.3 * faceBox.height))
+        guard let a, let b, faceBox.width > 1 else { return fallback }
+        let (l, r) = a.x <= b.x ? (a, b) : (b, a)
+        let spacing = l.distance(to: r) / Double(faceBox.width)
+        let tilt = abs(atan2(Double(r.y - l.y), Double(r.x - l.x))) * 180 / .pi
+        let box = faceBox.insetBy(dx: -0.1 * faceBox.width, dy: -0.1 * faceBox.height)
+        let upperHalf = Double(faceBox.minY) + 0.6 * Double(faceBox.height)
+        guard plausibleEyeSpacing.contains(spacing), tilt <= 40,
+              box.contains(l), box.contains(r), Double(l.y) < upperHalf, Double(r.y) < upperHalf else {
+            return fallback
+        }
+        return (l, r)
+    }
+
+    /// The chin (menton), validated against facial anatomy. Candidates, in
+    /// order: lowest jaw-contour point, bottom of the face box, and an estimate
+    /// from the mouth; the first that is below the mouth, inside the (slightly
+    /// enlarged) face box and at a plausible distance from the eyes wins.
+    static func plausibleChin(eyeLeft: CGPoint, eyeRight: CGPoint, contour: [CGPoint], lips: [CGPoint], faceBox: CGRect) -> CGPoint {
+        let eyeMid = CGPoint.midpoint(eyeLeft, eyeRight)
+        let ipd = max(eyeLeft.distance(to: eyeRight), 1)
+        let v = eyeRight - eyeLeft
+        // Unit vector perpendicular to the eye line, pointing down the face.
+        var down = CGPoint(x: -Double(v.y) / ipd, y: Double(v.x) / ipd)
+        if down.y < 0 { down = down * -1 }
+        func heightBelowEyes(_ p: CGPoint) -> Double {
+            let d = p - eyeMid
+            return Double(d.x) * Double(down.x) + Double(d.y) * Double(down.y)
+        }
+        let lowestLip = lips.map(heightBelowEyes).max()
+        let box = faceBox.insetBy(dx: -0.25 * faceBox.width, dy: -0.25 * faceBox.height)
+        func isPlausible(_ p: CGPoint) -> Bool {
+            let h = heightBelowEyes(p)
+            if let lowestLip, h <= lowestLip { return false }
+            return box.contains(p) && plausibleChinRatio.contains(h / ipd)
+        }
+        var candidates: [CGPoint] = []
+        if let lowest = contour.max(by: { heightBelowEyes($0) < heightBelowEyes($1) }) { candidates.append(lowest) }
+        candidates.append(CGPoint(x: faceBox.midX, y: faceBox.maxY))
+        if !lips.isEmpty {
+            // The mouth sits ~58% of the way from the eyes to the chin.
+            let mouth = CGPoint(x: lips.map { Double($0.x) }.reduce(0, +) / Double(lips.count),
+                                y: lips.map { Double($0.y) }.reduce(0, +) / Double(lips.count))
+            candidates.append(eyeMid + (mouth - eyeMid) / 0.58)
+        }
+        if let chin = candidates.first(where: isPlausible) { return chin }
+        // Last resort: the average face (eye-to-chin = 1.8 x pupil distance).
+        return eyeMid + down * (1.8 * ipd)
     }
 }
 
@@ -132,6 +217,7 @@ public enum PersonSegmenter {
     /// Soft person mask at the image's size, or nil if no person is found.
     public static func matte(for image: CGImage) throws -> AlphaMask? {
         let request = VNGeneratePersonSegmentationRequest()
+        VisionCompute.configure(request)
         request.qualityLevel = .accurate
         request.outputPixelFormat = kCVPixelFormatType_OneComponent8
         let handler = VNImageRequestHandler(cgImage: image, orientation: .up, options: [:])
@@ -147,6 +233,7 @@ public enum SubjectSegmenter {
     /// One soft mask per foreground instance, each at the image's size.
     public static func instanceMasks(for image: CGImage) throws -> [AlphaMask] {
         let request = VNGenerateForegroundInstanceMaskRequest()
+        VisionCompute.configure(request)
         let handler = VNImageRequestHandler(cgImage: image, orientation: .up, options: [:])
         try handler.perform([request])
         guard let result = request.results?.first else { return [] }

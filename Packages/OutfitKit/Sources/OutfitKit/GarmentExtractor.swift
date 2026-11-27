@@ -28,10 +28,16 @@ public struct ExtractedPiece: Identifiable, @unchecked Sendable {
     public var cropRect: PixelRect
     /// Body joints in `source` coordinates (photos of a person only).
     public var pose: PoseJoints?
+    /// The photographed person's head height / shoulder width in pixels.
+    public var referenceHeadHeight: Double?
+    public var referenceShoulderWidth: Double?
 
     /// Fit guides for another category (when the user re-labels the piece).
     public func anchors(for category: GarmentCategory) -> GarmentAnchors {
-        AnchorEstimator.estimate(category: category, mask: mask, pose: pose)
+        var anchors = AnchorEstimator.estimate(category: category, mask: mask, pose: pose)
+        anchors.sourceHeadHeight = referenceHeadHeight
+        anchors.sourceShoulderWidth = referenceShoulderWidth
+        return anchors
     }
 
     /// Rebuilds the RGBA cut-out from `source` and `mask`.
@@ -113,10 +119,17 @@ public final class GarmentExtractor: @unchecked Sendable {
         let w = image.width, h = image.height
         let matte = try? PersonSegmenter.matte(for: image)
         let pose = try? PoseDetector.detect(in: image)
+        let face = try? FaceAnalyzer.detect(in: image)
+        let reference = Self.references(pose: pose, face: face)
+        // Upsampling the 512x512 label map leaves stair-stepped edges; blur
+        // by about one label pixel and re-sharpen for smooth outlines.
+        let smoothing = max(1, Int((Double(max(w, h)) / Double(max(labelMap.width, 1))).rounded()))
         var pieces: [ExtractedPiece] = []
         for group in Self.groups {
             guard labelMap.fraction(of: group.labels) >= group.minArea else { continue }
             var mask = labelMap.mask(for: group.labels, width: w, height: h)
+                .blurred(radius: smoothing)
+                .contrastStretched(low: 90, high: 166)
             if group.refineWithMatte, let matte {
                 let refined = mask.multiplied(by: matte)
                 // Only trust the matte when it keeps most of the garment.
@@ -127,11 +140,36 @@ public final class GarmentExtractor: @unchecked Sendable {
             mask = mask
                 .keepingLargestComponents(maxCount: group.maxComponents, minRelativeArea: 0.08)
                 .fillingHoles(maxHoleFraction: 0.02)
-            guard let piece = makePiece(bitmap: bitmap, mask: mask, category: group.category, baseName: group.name,
+            guard var piece = makePiece(bitmap: bitmap, mask: mask, category: group.category, baseName: group.name,
                                         pose: pose, origin: .parsed) else { continue }
+            piece.referenceHeadHeight = reference.head
+            piece.referenceShoulderWidth = reference.shoulders
+            piece.anchors.sourceHeadHeight = reference.head
+            piece.anchors.sourceShoulderWidth = reference.shoulders
             pieces.append(piece)
         }
         return ExtractionResult(kind: .wornOutfit, pieces: pieces, pose: pose)
+    }
+
+    /// The photographed person's head height (from the face: eye-to-chin is
+    /// half a head) and shoulder seam width (from the pose), in pixels.
+    static func references(pose: PoseJoints?, face: FaceLandmarks?) -> (head: Double?, shoulders: Double?) {
+        var head: Double?
+        if let face, face.eyeToChin > 4 {
+            head = face.eyeToChin / Anthropometry.eyeLineFraction
+        }
+        var shoulders: Double?
+        if let l = pose?.shoulderL, let r = pose?.shoulderR {
+            let d = l.distance(to: r) * (1 + 2 * AnchorEstimator.shoulderJointToSeamExpansion)
+            if d > 8 { shoulders = d }
+        }
+        // Reject inconsistent pairs (e.g. a face from a poster in the background):
+        // shoulders are about 1.6-2.6 head heights wide.
+        if let hh = head, let sw = shoulders {
+            let ratio = sw / hh
+            if ratio < 1.2 || ratio > 3.2 { head = nil }
+        }
+        return (head, shoulders)
     }
 
     // MARK: Separate items
@@ -239,7 +277,9 @@ public final class GarmentExtractor: @unchecked Sendable {
             areaFraction: Double(fullMask.setCount()) / Double(max(1, bitmap.width * bitmap.height)),
             origin: origin,
             cropRect: crop,
-            pose: localPose
+            pose: localPose,
+            referenceHeadHeight: nil,
+            referenceShoulderWidth: nil
         )
     }
 }

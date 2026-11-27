@@ -76,3 +76,73 @@ jobs:
             ${{ runner.temp }}/package-previews
             ${{ runner.temp }}/swift-test.log
           if-no-files-found: ignore
+
+  app:
+    name: App (UI tests on simulator + IPA)
+    needs: model
+    runs-on: macos-26
+    env:
+      HAS_SIGNING: ${{ secrets.IOS_CERTIFICATE_P12 != '' && secrets.IOS_PROVISIONING_PROFILE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: clothing-parser-model
+          path: Models/build/ClothingParserModel.mlpackage
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: UI tests (iPhone 17 Pro simulator)
+        run: |
+          mkdir -p build
+          set -o pipefail
+          # Optimised code even in Debug so on-device-style image processing is fast;
+          # Debug keeps the bundled sample photos the UI test imports.
+          xcodebuild test \
+            -project OutfitSimulator.xcodeproj -scheme OutfitSimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest' \
+            -resultBundlePath build/UITests.xcresult \
+            SWIFT_OPTIMIZATION_LEVEL=-O CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee build/uitests.log | grep -E "error:|Test Case|Executed|\*\* TEST" || true
+          exit ${PIPESTATUS[0]}
+      - name: Export screenshots
+        if: always()
+        run: |
+          mkdir -p build/screenshots
+          xcrun xcresulttool export attachments --path build/UITests.xcresult --output-path build/screenshots || true
+          ls -la build/screenshots || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-test-screenshots
+          path: |
+            build/screenshots
+            build/uitests.log
+          if-no-files-found: ignore
+      - name: Archive (Release, unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project OutfitSimulator.xcodeproj -scheme OutfitSimulator -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/OutfitSimulator.xcarchive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            2>&1 | tee build/archive.log | grep -E "error:|warning: .*deprecated|\*\* ARCHIVE" || true
+          exit ${PIPESTATUS[0]}
+      - name: Package unsigned IPA
+        run: scripts/package-unsigned-ipa.sh build/OutfitSimulator.xcarchive build/OutfitSim-unsigned.ipa
+      - name: Signed IPA (only when signing secrets are configured)
+        if: env.HAS_SIGNING == 'true'
+        env:
+          IOS_CERTIFICATE_P12: ${{ secrets.IOS_CERTIFICATE_P12 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+          IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID }}
+          IOS_EXPORT_METHOD: ${{ vars.IOS_EXPORT_METHOD }}
+        run: scripts/build-signed-ipa.sh build/OutfitSim-signed.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OutfitSim-ipa
+          path: build/OutfitSim-*.ipa
+          if-no-files-found: error

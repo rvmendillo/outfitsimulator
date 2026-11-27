@@ -140,7 +140,10 @@ public final class HeadExtractor: @unchecked Sendable {
                     guard let c = bitmap.color(x: x, y: y) else { continue }
                     let d = c.lab.distance(to: skinLab)
                     let skinWeight = max(0, min(1, 1 - (d - 16) / 22))
-                    var a = fade * skinWeight
+                    // Soft sides: full strength in the middle 60%, fading to the edges.
+                    let dx = abs(Double(x) + 0.5 - Double(face.chin.x)) / neckHalfWidth
+                    let sideFade = max(0, min(1, (1 - dx) / 0.4))
+                    var a = fade * skinWeight * sideFade
                     if let matte { a *= Double(matte[x, y]) / 255 }
                     let i = y * w + x
                     head.values[i] = max(head.values[i], UInt8(max(0, min(255, (a * 255).rounded()))))

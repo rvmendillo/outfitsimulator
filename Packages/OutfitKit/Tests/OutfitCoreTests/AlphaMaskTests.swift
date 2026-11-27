@@ -117,6 +117,11 @@ final class AlphaMaskTests: XCTestCase {
         XCTAssertEqual(a.thresholded(200).values, [255, 0])
     }
 
+    func testContrastStretch() {
+        let m = AlphaMask(width: 5, height: 1, values: [0, 90, 128, 166, 255])
+        XCTAssertEqual(m.contrastStretched(low: 90, high: 166).values, [0, 0, 128, 255, 255])
+    }
+
     func testDilation() {
         var mask = AlphaMask(width: 9, height: 9)
         mask[4, 4] = 255

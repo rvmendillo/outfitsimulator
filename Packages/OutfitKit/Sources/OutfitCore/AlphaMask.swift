@@ -297,6 +297,18 @@ public struct AlphaMask: Equatable, Sendable {
         return AlphaMask(width: width, height: height, values: out)
     }
 
+    /// Linear ramp: values <= `low` become 0, >= `high` become 255. Applied
+    /// after a blur this turns blocky upsampled masks into smooth edges.
+    public func contrastStretched(low: UInt8, high: UInt8) -> AlphaMask {
+        guard high > low else { return thresholded(low) }
+        let lo = Double(low), range = Double(high - low)
+        var table = [UInt8](repeating: 0, count: 256)
+        for v in 0..<256 {
+            table[v] = UInt8(clamp(((Double(v) - lo) / range * 255).rounded(), 0, 255))
+        }
+        return AlphaMask(width: width, height: height, values: values.map { table[Int($0)] })
+    }
+
     public func thresholded(_ threshold: UInt8 = AlphaMask.defaultThreshold) -> AlphaMask {
         AlphaMask(width: width, height: height, values: values.map { $0 >= threshold ? 255 : 0 })
     }

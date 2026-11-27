@@ -78,6 +78,35 @@ final class SceneTests: XCTestCase {
         XCTAssertNil(scene.hitTest(CGPoint(x: 5, y: 5)))
     }
 
+    func testArmsAndLegsHideUnderGarmentsThatReplaceThem() {
+        let shorts = makeGarment(category: .bottom)
+        var jeansAnchors = GarmentAnchors.fallback(for: .bottom)
+        jeansAnchors.fitsLength = true
+        let jeans = makeGarment(category: .bottom, anchors: jeansAnchors)
+        let top = makeGarment(category: .top), hat = makeGarment(category: .hat)
+        let garments = Dictionary(uniqueKeysWithValues: [shorts, jeans, top, hat].map { ($0.id, $0) })
+        func scene(_ items: [Garment]) -> OutfitScene {
+            SceneBuilder.build(avatar: avatar, outfit: Outfit(name: "x", items: items.map { OutfitItem(garmentID: $0.id) }),
+                               garments: garments, face: nil, skinTone: .white)
+        }
+        XCTAssertTrue(scene([]).showsArms)
+        XCTAssertTrue(scene([]).showsLegs)
+        XCTAssertTrue(scene([hat, shorts]).showsArms)
+        XCTAssertTrue(scene([hat, shorts]).showsLegs, "shorts show legs")
+        XCTAssertFalse(scene([top]).showsArms, "sleeves replace arms")
+        XCTAssertFalse(scene([jeans]).showsLegs, "full-length trousers replace legs")
+        let parts = AvatarShape.parts(for: scene([top])).map(\.kind)
+        XCTAssertFalse(parts.contains(.armLeft))
+        XCTAssertTrue(parts.contains(.body))
+        var noArms = avatar.profile
+        noArms.showArms = false
+        let s = SceneBuilder.build(avatar: AvatarModel(profile: noArms), outfit: Outfit(name: "x"), garments: [:], face: nil, skinTone: .white)
+        XCTAssertFalse(s.showsArms, "setting respected")
+        let clip = AvatarShape.torsoClipRect(for: avatar)
+        XCTAssertTrue(clip.contains(CGPoint(x: 0, y: avatar.hipY)))
+        XCTAssertFalse(clip.contains(CGPoint(x: 0, y: avatar.kneeY)))
+    }
+
     func testCanvasMappingFitsAndRoundTrips() {
         let rect = CanvasMapping.standardBodyRect(for: avatar)
         let mapping = CanvasMapping(bodyRect: rect, canvasSize: CGSize(width: 390, height: 600), padding: 0.05)

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF7A45"/>
+      <stop offset="0.55" stop-color="#FF4F5E"/>
+      <stop offset="1" stop-color="#D62B7A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.22" r="0.75">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <!-- Hanger -->
+  <g fill="none" stroke="#FFF6EE" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M512 452 C512 412 548 398 566 372 C586 343 572 296 528 286 C488 277 456 302 456 338" stroke-width="54"/>
+    <path d="M512 452 L222 664 C196 683 210 720 242 720 L782 720 C814 720 828 683 802 664 Z" stroke-width="54"/>
+  </g>
+  <!-- Sparkle -->
+  <path d="M752 250 C760 300 776 316 826 324 C776 332 760 348 752 398 C744 348 728 332 678 324 C728 316 744 300 752 250 Z" fill="#FFF6EE"/>
+  <circle cx="842" cy="430" r="18" fill="#FFF6EE" opacity="0.85"/>
+</svg>

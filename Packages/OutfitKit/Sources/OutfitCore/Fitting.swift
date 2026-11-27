@@ -101,10 +101,54 @@ public enum GarmentFitter {
             }
         }
 
+        // Accessories cut from a photo of a person keep their size relative to
+        // that person (a hat relative to the head, shoes to the body).
+        if let s = referenceScale(anchors: anchors, category: category, avatar: avatar) {
+            sx = s
+            sy = s
+        }
+
+        // Plausibility: never let a bad measurement blow a piece up.
+        let limits = maximumSize(for: category)
+        let shrink = min(1, limits.width / max(sx * width, 1e-9), limits.height / max(sy * height, 1e-9))
+        sx *= shrink
+        sy *= shrink
+
         return Affine2D.translation(-Double(mid.x), -Double(mid.y))
             .concatenating(.rotation(-angle))
             .concatenating(.scale(sx, sy))
             .concatenating(.translation(target.midpoint))
+    }
+
+    /// Uniform scale from the source photo's person, when known.
+    static func referenceScale(anchors: GarmentAnchors, category: GarmentCategory, avatar: AvatarModel) -> Double? {
+        switch category {
+        case .hat, .eyewear:
+            guard let head = anchors.sourceHeadHeight else { return nil }
+            return avatar.headHeight / head
+        case .shoes, .bag, .belt, .scarf, .accessory:
+            guard let shoulders = anchors.sourceShoulderWidth else { return nil }
+            return 2 * avatar.shoulderHalfWidth / shoulders
+        case .top, .outerwear, .dress, .bottom:
+            return nil
+        }
+    }
+
+    /// Largest plausible size (width, height) of a piece, in units of stature.
+    public static func maximumSize(for category: GarmentCategory) -> (width: Double, height: Double) {
+        switch category {
+        case .top: return (1.1, 0.6)
+        case .outerwear: return (1.1, 0.85)
+        case .dress: return (1.1, 0.95)
+        case .bottom: return (0.7, 0.72)
+        case .shoes: return (0.45, 0.22)
+        case .hat: return (0.28, 0.24)
+        case .eyewear: return (0.14, 0.08)
+        case .bag: return (0.4, 0.5)
+        case .scarf: return (0.5, 0.6)
+        case .belt: return (0.4, 0.1)
+        case .accessory: return (0.3, 0.3)
+        }
     }
 
     /// The body-space point a garment's manual adjustment pivots around.
@@ -132,34 +176,52 @@ public enum GarmentFitter {
 }
 
 /// Aligns the user's head cut-out with the avatar.
+///
+/// * Rotation levels the eye line exactly (corrects head roll).
+/// * Scale makes the eye-to-chin height (measured perpendicular to the eye
+///   line, so it is insensitive to roll and to turning the head) equal half
+///   the avatar's head height — the canonical "eyes at mid-head" rule — and,
+///   for front-facing photos, also takes the interpupillary distance into
+///   account. Scale is uniform, so the face is never distorted.
+/// * Translation pins the chin onto the avatar's chin so the neck connects.
 public enum FaceFitter {
-    /// Relative weights of left eye, right eye and chin in the fit.
-    public static let weights: [Double] = [1, 1, 1.2]
+    /// Weight of the eye-to-chin height versus the pupil distance when
+    /// estimating scale (geometric weighting).
+    public static let verticalWeight = 0.65
+    /// Above this head turn the pupil distance is foreshortened, so only the
+    /// eye-to-chin height is used.
+    public static let yawLimitForIPD = 12.0
     /// Rotation correction is limited so a bad landmark cannot spin the head.
     public static let maxRoll = Double.pi / 6
 
-    /// Similarity transform (uniform scale, roll correction, translation)
-    /// mapping the cut-out's pupils and chin onto the avatar's. Uniform scale
-    /// keeps the face undistorted; least squares spreads any difference in face
-    /// shape evenly between eyes and chin.
     public static func autoFit(face: FaceAsset, avatar: AvatarModel) -> Affine2D? {
         var eyeL = face.eyeLeft, eyeR = face.eyeRight
         if eyeL.x > eyeR.x { swap(&eyeL, &eyeR) }
-        let source = [eyeL, eyeR, face.chin]
-        guard source.allSatisfy(\.isFinite) else { return nil }
-        let target = [avatar.eyeLeft, avatar.eyeRight, avatar.chin]
-        guard var transform = PointFit.similarity(from: source, to: target, weights: weights, allowRotation: true) else {
-            return nil
-        }
-        let roll = transform.rotationAngle
-        if abs(roll) > maxRoll {
-            // Keep the fitted scale (head size) but limit the rotation, and pin
-            // the chin to the avatar's chin so the neck still connects.
-            let linear = Affine2D.rotation(clamp(roll, -maxRoll, maxRoll)).concatenating(.scale(transform.meanScale))
-            let mappedChin = linear.apply(face.chin)
-            transform = linear.concatenating(.translation(avatar.chin - mappedChin))
-        }
-        return transform
+        let chin = face.chin
+        guard eyeL.isFinite, eyeR.isFinite, chin.isFinite else { return nil }
+
+        let eyeVector = eyeR - eyeL
+        let ipd = eyeVector.length
+        guard ipd > 1e-6 else { return nil }
+        let tilt = atan2(Double(eyeVector.y), Double(eyeVector.x))
+        let eyeMid = CGPoint.midpoint(eyeL, eyeR)
+        // Distance from the eye line to the chin, perpendicular to the eye line.
+        let down = CGPoint(x: -Double(eyeVector.y) / ipd, y: Double(eyeVector.x) / ipd)
+        let toChin = chin - eyeMid
+        let eyeToChin = Double(toChin.x) * Double(down.x) + Double(toChin.y) * Double(down.y)
+        guard eyeToChin > 1e-6 else { return nil }
+
+        let verticalScale = (avatar.chinY - avatar.eyeY) / eyeToChin
+        let horizontalScale = avatar.interpupillaryDistance / ipd
+        let turned = abs(face.yawDegrees ?? 0) > yawLimitForIPD
+        let w = turned ? 1.0 : verticalWeight
+        let scale = exp(w * log(verticalScale) + (1 - w) * log(horizontalScale))
+        guard scale.isFinite, scale > 0 else { return nil }
+
+        let rotation = clamp(-tilt, -maxRoll, maxRoll)
+        let linear = Affine2D.rotation(rotation).concatenating(.scale(scale))
+        let transform = linear.concatenating(.translation(avatar.chin - linear.apply(chin)))
+        return transform.isInvertible ? transform : nil
     }
 
     /// Pivot for manual face adjustments: the midpoint between the avatar's eyes.
@@ -172,11 +234,17 @@ public enum FaceFitter {
         return GarmentFitter.apply(face.adjustment, to: fit, pivot: pivot(avatar: avatar))
     }
 
-    /// Head height in body units implied by a placement, using the canonical
-    /// eye-line-at-mid-head rule (eye→chin distance is half the head height).
+    /// Head height in body units implied by a placement: twice the eye-to-chin
+    /// height measured perpendicular to the placed eye line.
     public static func impliedHeadHeight(face: FaceAsset, placement: Affine2D) -> Double {
-        let eyeMid = placement.apply(.midpoint(face.eyeLeft, face.eyeRight))
+        let l = placement.apply(face.eyeLeft), r = placement.apply(face.eyeRight)
         let chin = placement.apply(face.chin)
-        return eyeMid.distance(to: chin) / Anthropometry.eyeLineFraction
+        let v = r - l
+        let len = max(v.length, 1e-12)
+        let sign: Double = v.x >= 0 ? 1 : -1
+        let down = CGPoint(x: -Double(v.y) / len * sign, y: Double(v.x) / len * sign)
+        let toChin = chin - CGPoint.midpoint(l, r)
+        let height = Double(toChin.x) * Double(down.x) + Double(toChin.y) * Double(down.y)
+        return height / Anthropometry.eyeLineFraction
     }
 }

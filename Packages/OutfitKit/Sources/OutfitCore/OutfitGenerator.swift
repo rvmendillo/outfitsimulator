@@ -47,6 +47,11 @@ public struct OutfitSuggestion: Equatable, Sendable {
     public var garmentIDs: [UUID]
     public var score: Double
 
+    public init(garmentIDs: [UUID], score: Double) {
+        self.garmentIDs = garmentIDs
+        self.score = score
+    }
+
     public var signature: [UUID] {
         garmentIDs.sorted { $0.uuidString < $1.uuidString }
     }
@@ -76,6 +81,11 @@ public struct GeneratorResult: Equatable, Sendable {
     public var suggestions: [OutfitSuggestion]
     /// Categories the user should add to get suggestions (empty when not needed).
     public var missing: [GarmentCategory]
+
+    public init(suggestions: [OutfitSuggestion], missing: [GarmentCategory]) {
+        self.suggestions = suggestions
+        self.missing = missing
+    }
 }
 
 /// Mixes the closet into outfits: tops with bottoms (or dresses), shoes, and

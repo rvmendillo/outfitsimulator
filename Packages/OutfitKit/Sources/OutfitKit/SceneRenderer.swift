@@ -101,8 +101,13 @@ public enum SceneRenderer {
                                        width: shadowWidth, height: shadowHeight))
         }
 
+        ctx.saveGState()
+        if !scene.showsLegs {
+            let clip = AvatarShape.torsoClipRect(for: avatar)
+            ctx.clip(to: toCanvas.boundingBox(of: clip))
+        }
         ctx.setFillColor(style.skin.cgColor)
-        for part in AvatarShape.parts(for: avatar, includeHead: scene.drawsAvatarHead) {
+        for part in AvatarShape.parts(for: scene) {
             ctx.addPath(part.elements.cgPath(transform: toCanvas))
             ctx.fillPath()
         }
@@ -113,6 +118,7 @@ public enum SceneRenderer {
                 ctx.fillPath()
             }
         }
+        ctx.restoreGState()
 
         for layer in scene.layers {
             guard let image = images[layer.content] else { continue }

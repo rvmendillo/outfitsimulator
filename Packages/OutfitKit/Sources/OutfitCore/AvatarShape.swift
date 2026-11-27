@@ -100,10 +100,10 @@ public struct AvatarPart: Equatable, Sendable {
 
 /// Builds the avatar silhouette from an `AvatarModel`, in body space.
 public enum AvatarShape {
-    /// Parts in back-to-front order.
-    public static func parts(for avatar: AvatarModel, includeHead: Bool) -> [AvatarPart] {
+    /// Parts in back-to-front order. `includeArms` defaults to the profile setting.
+    public static func parts(for avatar: AvatarModel, includeHead: Bool, includeArms: Bool? = nil) -> [AvatarPart] {
         var result: [AvatarPart] = []
-        if avatar.profile.showArms {
+        if includeArms ?? avatar.profile.showArms {
             let right = armOutline(avatar)
             let left = right.reversed().map(\.mirroredX)
             result.append(AvatarPart(kind: .armLeft, outline: left, elements: PathBuilder.smoothClosed(left)))
@@ -116,6 +116,17 @@ public enum AvatarShape {
             result.append(AvatarPart(kind: .head, outline: head, elements: PathBuilder.smoothClosed(head)))
         }
         return result
+    }
+
+    /// Body-space region kept when the legs are hidden (everything above the
+    /// upper thighs).
+    public static func torsoClipRect(for avatar: AvatarModel) -> CGRect {
+        CGRect(x: -2, y: -2, width: 4, height: 2 + avatar.crotchY + 0.05)
+    }
+
+    /// Parts to draw for a scene (arms and head as the scene requires).
+    public static func parts(for scene: OutfitScene) -> [AvatarPart] {
+        parts(for: scene.avatar, includeHead: scene.drawsAvatarHead, includeArms: scene.showsArms)
     }
 
     /// Neutral base layer (tank + briefs) so the avatar never looks undressed.

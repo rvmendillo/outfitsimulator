@@ -27,14 +27,25 @@ public struct GarmentAnchors: Codable, Equatable, Sendable {
     public var fitsLength: Bool
     public var level: AnchorLevel
     public var source: AnchorSource
+    /// For pieces cut from a photo of a person: that person's head height
+    /// (vertex to chin) in the cut-out's pixels. Lets hats and glasses keep
+    /// their real size relative to a head.
+    public var sourceHeadHeight: Double?
+    /// For pieces cut from a photo of a person: that person's shoulder width
+    /// (seam to seam) in the cut-out's pixels. Lets shoes, bags and belts keep
+    /// their real size relative to a body.
+    public var sourceShoulderWidth: Double?
 
-    public init(left: CGPoint, right: CGPoint, hemY: Double, fitsLength: Bool, level: AnchorLevel, source: AnchorSource) {
+    public init(left: CGPoint, right: CGPoint, hemY: Double, fitsLength: Bool, level: AnchorLevel, source: AnchorSource,
+                sourceHeadHeight: Double? = nil, sourceShoulderWidth: Double? = nil) {
         self.left = left
         self.right = right
         self.hemY = hemY
         self.fitsLength = fitsLength
         self.level = level
         self.source = source
+        self.sourceHeadHeight = sourceHeadHeight
+        self.sourceShoulderWidth = sourceShoulderWidth
     }
 
     /// A copy with points clamped into the unit square and ordered left → right.
@@ -49,6 +60,8 @@ public struct GarmentAnchors: Codable, Equatable, Sendable {
         copy.left = l
         copy.right = r
         copy.hemY = clamp(hemY.isFinite ? hemY : 1, 0, 1)
+        if let h = sourceHeadHeight, !(h.isFinite && h > 1) { copy.sourceHeadHeight = nil }
+        if let w = sourceShoulderWidth, !(w.isFinite && w > 1) { copy.sourceShoulderWidth = nil }
         return copy
     }
 

@@ -132,6 +132,51 @@ final class FittingTests: XCTestCase {
         XCTAssertEqual(ItemAdjustment(offset: CGPoint(x: Double.nan, y: 0), scale: .nan, rotation: .infinity).sanitized, .identity)
     }
 
+    func testAccessoriesFromAPhotoKeepTheirSizeRelativeToThePerson() {
+        // A hat photographed on a person whose head was 200 px tall must come out
+        // as wide (relative to the avatar's head) as it was relative to theirs.
+        var hat = anchors(CGPoint(x: 0.1, y: 0.9), CGPoint(x: 0.9, y: 0.9), level: .brim)
+        hat.sourceHeadHeight = 200
+        let size = CGSize(width: 260, height: 180)
+        let fit = GarmentFitter.autoFit(anchors: hat, imageSize: size, category: .hat, avatar: avatar)
+        XCTAssertEqual(fit.meanScale, avatar.headHeight / 200, accuracy: 1e-12)
+
+        var shoes = anchors(CGPoint(x: 0, y: 1), CGPoint(x: 1, y: 1), level: .sole)
+        shoes.sourceShoulderWidth = 400
+        let shoeFit = GarmentFitter.autoFit(anchors: shoes, imageSize: CGSize(width: 300, height: 120), category: .shoes, avatar: avatar)
+        XCTAssertEqual(shoeFit.meanScale, 2 * avatar.shoulderHalfWidth / 400, accuracy: 1e-12)
+        // Soles still stand on the floor.
+        XCTAssertEqual(Double(shoeFit.apply(CGPoint(x: 150, y: 120)).y), avatar.floorY, accuracy: 1e-9)
+
+        // Core garments ignore the references (they fit to body landmarks).
+        var top = anchors(CGPoint(x: 0.2, y: 0.1), CGPoint(x: 0.8, y: 0.1), level: .shoulders)
+        top.sourceShoulderWidth = 50
+        let topFit = GarmentFitter.autoFit(anchors: top, imageSize: CGSize(width: 400, height: 500), category: .top, avatar: avatar)
+        XCTAssertEqual(topFit.meanScale, 2 * avatar.shoulderHalfWidth / 240, accuracy: 1e-12)
+    }
+
+    func testImplausibleMeasurementsAreClamped() {
+        // A hat whose brim was measured 10 px wide would be scaled absurdly large.
+        let hat = anchors(CGPoint(x: 0.48, y: 0.95), CGPoint(x: 0.52, y: 0.95), level: .brim)
+        let size = CGSize(width: 250, height: 240)
+        let fit = GarmentFitter.autoFit(anchors: hat, imageSize: size, category: .hat, avatar: avatar)
+        let box = fit.boundingBox(of: CGRect(origin: .zero, size: size))
+        let limits = GarmentFitter.maximumSize(for: .hat)
+        XCTAssertLessThanOrEqual(Double(box.width), limits.width + 1e-9)
+        XCTAssertLessThanOrEqual(Double(box.height), limits.height + 1e-9)
+        // The anchor still lands on the head.
+        let target = GarmentFitter.target(for: .hat, level: .brim, avatar: avatar)
+        XCTAssertPointEqual(fit.apply(CGPoint(x: 125, y: 228)), target.midpoint, accuracy: 1e-9)
+    }
+
+    func testReferenceScalesAreSanitized() {
+        var a = anchors(CGPoint(x: 0, y: 0), CGPoint(x: 1, y: 0), level: .brim)
+        a.sourceHeadHeight = .nan
+        a.sourceShoulderWidth = -3
+        XCTAssertNil(a.normalized.sourceHeadHeight)
+        XCTAssertNil(a.normalized.sourceShoulderWidth)
+    }
+
     // MARK: Face alignment (proportions)
 
     /// A synthetic face whose landmarks have exactly the avatar's proportions.
@@ -172,6 +217,7 @@ final class FittingTests: XCTestCase {
         // The chin still lands exactly on the neck and the head keeps its size.
         XCTAssertPointEqual(fit.apply(face.chin), avatar.chin, accuracy: 1e-9)
         XCTAssertEqual(fit.meanScale, 1 / 1800, accuracy: 1e-12)
+        XCTAssertEqual(FaceFitter.impliedHeadHeight(face: face, placement: fit), avatar.headHeight, accuracy: 1e-9)
     }
 
     func testHeadIsOneHeadHeightForEveryStature() throws {
@@ -210,6 +256,35 @@ final class FittingTests: XCTestCase {
         let eyeMid = placement.apply(.midpoint(face.eyeLeft, face.eyeRight))
         XCTAssertPointEqual(eyeMid, FaceFitter.pivot(avatar: avatar), accuracy: 1e-9)
         XCTAssertEqual(FaceFitter.impliedHeadHeight(face: face, placement: placement), avatar.headHeight * 1.1, accuracy: 1e-9)
+    }
+
+    func testTurnedHeadKeepsEyesLevelAndChinOnNeck() throws {
+        // A head turned ~25°: pupils foreshortened and the chin shifted sideways.
+        var face = idealFace(pixelsPerUnit: 2000, for: avatar)
+        let mid = CGPoint.midpoint(face.eyeLeft, face.eyeRight)
+        face.eyeLeft = mid + (face.eyeLeft - mid) * cos(25 * Double.pi / 180)
+        face.eyeRight = mid + (face.eyeRight - mid) * cos(25 * Double.pi / 180)
+        face.chin = face.chin + CGPoint(x: 30, y: 0)
+        face.yawDegrees = 25
+        let fit = try XCTUnwrap(FaceFitter.autoFit(face: face, avatar: avatar))
+        let l = fit.apply(face.eyeLeft), r = fit.apply(face.eyeRight)
+        XCTAssertEqual(Double(l.y), Double(r.y), accuracy: 1e-9, "eyes level")
+        XCTAssertPointEqual(fit.apply(face.chin), avatar.chin, accuracy: 1e-9)
+        // Turned heads are scaled by eye-to-chin height only, so size is exact.
+        XCTAssertEqual(FaceFitter.impliedHeadHeight(face: face, placement: fit), avatar.headHeight, accuracy: 1e-9)
+    }
+
+    func testFrontalScaleBlendsEyeChinAndPupilDistance() throws {
+        // Pupils 10% wider than average on a frontal face: the head is scaled a
+        // little smaller than eye-to-chin alone would give, never distorted.
+        var face = idealFace(pixelsPerUnit: 2000, for: avatar)
+        let mid = CGPoint.midpoint(face.eyeLeft, face.eyeRight)
+        face.eyeLeft = mid + (face.eyeLeft - mid) * 1.1
+        face.eyeRight = mid + (face.eyeRight - mid) * 1.1
+        let fit = try XCTUnwrap(FaceFitter.autoFit(face: face, avatar: avatar))
+        let expected = (1.0 / 2000) * pow(1 / 1.1, 1 - FaceFitter.verticalWeight)
+        XCTAssertEqual(fit.meanScale, expected, accuracy: 1e-12)
+        XCTAssertEqual(fit.a, fit.d, accuracy: 1e-12)
     }
 
     func testDegenerateFaceReturnsNil() {

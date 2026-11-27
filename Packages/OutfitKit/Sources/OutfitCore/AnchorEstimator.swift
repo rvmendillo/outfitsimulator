@@ -33,7 +33,7 @@ public enum AnchorEstimator {
         case .shoes:
             result = shoes(mask: mask, threshold: threshold) ?? bandAnchors(mask: mask, box: box, level: .sole, yFraction: 1.0, useMax: true, threshold: threshold)
         case .hat:
-            result = bandAnchors(mask: mask, box: box, level: .brim, band: 0.88...1.0, yFraction: 0.97, useMax: true, threshold: threshold)
+            result = bandAnchors(mask: mask, box: box, level: .brim, band: 0.5...1.0, yFraction: 0.95, useMax: true, threshold: threshold)
         case .eyewear:
             result = bandAnchors(mask: mask, box: box, level: .eyes, band: 0.2...0.8, yFraction: 0.5, useMax: true, threshold: threshold)
         case .bag:

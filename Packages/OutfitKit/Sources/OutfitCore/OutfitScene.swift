@@ -42,6 +42,11 @@ public struct OutfitScene: Equatable, Sendable {
     /// True when no face photo is used, so the avatar's own head is drawn.
     public var drawsAvatarHead: Bool
     public var skinTone: SRGBColor
+    /// Avatar arms are hidden under upper-body garments: the garment's own
+    /// sleeves (photographed in another pose) stand in for them.
+    public var showsArms: Bool = true
+    /// Avatar legs are hidden under full-length trousers/skirts for the same reason.
+    public var showsLegs: Bool = true
 
     /// Union of the avatar and every layer, in body space.
     public var bounds: CGRect {
@@ -88,6 +93,9 @@ public enum SceneBuilder {
             layers.append(SceneLayer(content: .garment(garment.id), transform: transform,
                                      imageSize: garment.imageSize, zIndex: z, category: garment.category))
         }
+        let worn = outfit.items.compactMap { garments[$0.garmentID] }
+        let coversUpperBody = worn.contains { [.top, .outerwear, .dress].contains($0.category) }
+        let coversLegs = worn.contains { $0.category == .bottom && $0.anchors.fitsLength }
         var drawsAvatarHead = true
         if let face, face.imageSize.width > 0, face.imageSize.height > 0,
            let transform = FaceFitter.placement(face: face, avatar: avatar), transform.isInvertible {
@@ -96,7 +104,8 @@ public enum SceneBuilder {
             drawsAvatarHead = false
         }
         layers.sort { $0.zIndex < $1.zIndex }
-        return OutfitScene(avatar: avatar, layers: layers, drawsAvatarHead: drawsAvatarHead, skinTone: skinTone)
+        return OutfitScene(avatar: avatar, layers: layers, drawsAvatarHead: drawsAvatarHead, skinTone: skinTone,
+                           showsArms: avatar.profile.showArms && !coversUpperBody, showsLegs: !coversLegs)
     }
 
     /// z value that moves `garmentID` one step forward (+1) or backward (-1)

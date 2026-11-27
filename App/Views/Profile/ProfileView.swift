@@ -88,37 +88,55 @@ struct ProfileView: View {
     }
 
     private var faceCard: some View {
-        HStack(spacing: 16) {
-            ZStack {
-                Circle().fill(Brand.blush)
-                if let face = model.profile.face, let image = model.uiImage(face.imageFile) {
-                    Image(uiImage: image).resizable().scaledToFit().padding(6).clipShape(Circle())
-                } else {
-                    Image(systemName: "person.fill").font(.system(size: 38)).foregroundStyle(Brand.coral)
-                }
-            }
-            .frame(width: 92, height: 92)
-            VStack(alignment: .leading, spacing: 8) {
-                Text(model.profile.face == nil ? "Add your face" : "Your face")
-                    .font(Brand.display(22)).foregroundStyle(Brand.ink)
-                Text(model.profile.face == nil ? "See outfits on you, in true proportion." : "Scaled to \(HeightFormatter.string(fromCentimetres: model.profile.body.heightCM, units: model.profile.units)).")
-                    .font(.footnote).foregroundStyle(Brand.secondaryInk)
-                HStack(spacing: 8) {
-                    Button(model.profile.face == nil ? "Add photo" : "Change") { showFaceSetup = true }
-                        .buttonStyle(.borderedProminent)
-                        .tint(Brand.coral)
-                        .accessibilityIdentifier("profile.face")
-                    if model.profile.face != nil {
-                        Button("Fine-tune") { showFaceTune = true }
-                            .buttonStyle(.bordered)
-                        Button(role: .destructive) { model.removeFace() } label: { Image(systemName: "trash") }
-                            .buttonStyle(.bordered)
-                            .accessibilityLabel("Remove face photo")
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle().fill(Brand.blush)
+                    if let face = model.profile.face, let image = model.uiImage(face.imageFile) {
+                        Image(uiImage: image).resizable().scaledToFit().padding(6).clipShape(Circle())
+                    } else {
+                        Image(systemName: "person.fill").font(.system(size: 38)).foregroundStyle(Brand.coral)
                     }
                 }
-                .font(.subheadline.weight(.semibold))
+                .frame(width: 84, height: 84)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(model.profile.face == nil ? "Add your face" : "Your face")
+                        .font(Brand.display(22)).foregroundStyle(Brand.ink)
+                    Text(model.profile.face == nil
+                         ? "See outfits on you, in true proportion."
+                         : "Scaled to \(HeightFormatter.string(fromCentimetres: model.profile.body.heightCM, units: model.profile.units)).")
+                        .font(.footnote).foregroundStyle(Brand.secondaryInk)
+                }
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
+            HStack(spacing: 10) {
+                Button {
+                    showFaceSetup = true
+                } label: {
+                    Label(model.profile.face == nil ? "Add photo" : "Change", systemImage: "camera")
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Brand.coral)
+                .accessibilityIdentifier("profile.face")
+                if model.profile.face != nil {
+                    Button {
+                        showFaceTune = true
+                    } label: {
+                        Label("Fine-tune", systemImage: "slider.horizontal.3")
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(Brand.coral)
+                    Button(role: .destructive) { model.removeFace() } label: { Image(systemName: "trash") }
+                        .buttonStyle(.bordered)
+                        .accessibilityLabel("Remove face photo")
+                }
+            }
+            .font(.subheadline.weight(.semibold))
+            .controlSize(.regular)
         }
         .padding(16)
         .brandCard()

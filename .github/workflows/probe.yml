@@ -1,0 +1,30 @@
+name: probe
+on:
+  push:
+    paths:
+      - ".github/workflows/probe.yml"
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Environment
+        run: |
+          sw_vers
+          uname -m
+          ls /Applications | grep -i xcode || true
+          xcodebuild -version
+          xcrun simctl list runtimes
+          xcrun simctl list devicetypes | grep -i iphone | head -20
+          which xcodegen || echo "no xcodegen"
+          brew --version | head -1
+          python3 --version
+          df -h / | tail -1
+      - run: echo "probe ok ${{ matrix.os }}" > probe.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: probe-${{ matrix.os }}
+          path: probe.txt

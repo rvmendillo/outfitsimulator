@@ -10,7 +10,7 @@ an exact revision so builds are reproducible. The converted model:
 
 Usage::
 
-    python Models/convert_clothing_parser.py --output Models/build/ClothingParser.mlpackage
+    python Models/convert_clothing_parser.py --output Models/build/ClothingParserModel.mlpackage
 
 On macOS the script can also validate the Core ML output against PyTorch
 (``--validate-image path.jpg``); prediction is not available on Linux.
@@ -145,7 +145,7 @@ def validate(package: Path, images: list[Path], min_agreement: float) -> None:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--output", type=Path, default=Path("Models/build/ClothingParser.mlpackage"))
+    parser.add_argument("--output", type=Path, default=Path("Models/build/ClothingParserModel.mlpackage"))
     parser.add_argument("--no-quantize", action="store_true", help="Keep float16 weights (larger package).")
     parser.add_argument("--skip-convert", action="store_true", help="Only run validation on an existing package.")
     parser.add_argument("--validate-image", type=Path, action="append", default=[])

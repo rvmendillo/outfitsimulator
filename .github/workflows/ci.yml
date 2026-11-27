@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+
+jobs:
+  core-linux:
+    name: OutfitCore tests (Linux)
+    runs-on: ubuntu-24.04
+    container: swift:6.2-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: swift test
+        run: swift test --package-path Packages/OutfitKit
+
+  model:
+    name: Clothing parser (convert + validate)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore converted model
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: Models/build/ClothingParserModel.mlpackage
+          key: clothing-parser-${{ hashFiles('Models/convert_clothing_parser.py', 'Models/requirements.txt') }}
+      - uses: actions/setup-python@v5
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          python-version: "3.12"
+      - name: Convert and validate against PyTorch
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r Models/requirements.txt
+          python Models/convert_clothing_parser.py \
+            --output Models/build/ClothingParserModel.mlpackage \
+            --validate-image Packages/OutfitKit/Tests/OutfitKitTests/Fixtures/outfit_front.jpg \
+            --validate-image Packages/OutfitKit/Tests/OutfitKitTests/Fixtures/outfit_side.jpg \
+            --validate-image Packages/OutfitKit/Tests/OutfitKitTests/Fixtures/face_portrait.jpg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clothing-parser-model
+          path: Models/build/ClothingParserModel.mlpackage
+          if-no-files-found: error
+
+  package-tests:
+    name: OutfitKit tests (macOS, Vision + Core ML)
+    needs: model
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: clothing-parser-model
+          path: Models/build/ClothingParserModel.mlpackage
+      - name: swift test
+        env:
+          REQUIRE_PARSER_MODEL: "1"
+          OUTFIT_ARTIFACTS_DIR: ${{ runner.temp }}/package-previews
+        run: swift test --package-path Packages/OutfitKit 2>&1 | tee "$RUNNER_TEMP/swift-test.log"; exit ${PIPESTATUS[0]}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: package-previews
+          path: |
+            ${{ runner.temp }}/package-previews
+            ${{ runner.temp }}/swift-test.log
+          if-no-files-found: ignore

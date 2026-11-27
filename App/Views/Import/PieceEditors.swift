@@ -49,6 +49,9 @@ struct CutoutEditor: View {
                         .onEnded { _ in lastPoint = nil }
                 )
                 .frame(width: geo.size.width, height: geo.size.height)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Cut-out. Drag to \(mode == .erase ? "erase" : "restore").")
+                .accessibilityAddTraits(.isImage)
                 .accessibilityIdentifier("cutout.canvas")
             }
 
@@ -258,7 +261,7 @@ struct PieceEditorSheet: View {
     @State private var anchors: GarmentAnchors
 
     init(piece: ReviewPiece) {
-        self.piece = piece
+        _piece = ObservedObject(wrappedValue: piece)
         _mask = State(initialValue: piece.mask)
         _anchors = State(initialValue: piece.anchors)
     }

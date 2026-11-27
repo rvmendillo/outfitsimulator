@@ -47,7 +47,7 @@ actor ProcessingEngine {
         var size: CGSize
     }
 
-    nonisolated static func encode(source: RGBABitmap, mask: AlphaMask) throws -> EncodedPiece {
+    static func encode(source: RGBABitmap, mask: AlphaMask) throws -> EncodedPiece {
         let cut = CutoutComposer.compose(source: source, mask: mask)
         guard let cutImage = cut.makeCGImage(), let cutoutPNG = ImageCodec.pngData(cutImage),
               let sourceImage = source.makeCGImage(), let sourceJPEG = ImageCodec.jpegData(sourceImage, quality: 0.9),

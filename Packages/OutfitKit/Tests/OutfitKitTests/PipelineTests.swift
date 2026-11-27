@@ -64,6 +64,40 @@ final class PipelineTests: XCTestCase {
         XCTAssertTrue(["Denim", "Blue", "Sky Blue", "Navy", "Gray", "Light Gray"].contains(bottom.dominantColor.name), bottom.dominantColor.name)
     }
 
+    func testWornAccessoriesKeepRealisticSizes() async throws {
+        let parser = try await TestModel.parser()
+        let result = try GarmentExtractor(parser: parser).extract(from: try Fixtures.image("outfit_front.jpg"))
+        let avatar = AvatarModel(profile: BodyProfile(heightCM: 175))
+        for piece in result.pieces {
+            let cut = piece.cutout()
+            let size = CGSize(width: cut.width, height: cut.height)
+            let fit = GarmentFitter.autoFit(anchors: piece.anchors, imageSize: size, category: piece.category, avatar: avatar)
+            let box = fit.boundingBox(of: CGRect(origin: .zero, size: size))
+            let limits = GarmentFitter.maximumSize(for: piece.category)
+            XCTAssertLessThanOrEqual(Double(box.width), limits.width + 1e-9, "\(piece.category) width")
+            XCTAssertLessThanOrEqual(Double(box.height), limits.height + 1e-9, "\(piece.category) height")
+            switch piece.category {
+            case .hat:
+                // A beanie is roughly head-sized: 0.7-1.9 head widths across.
+                let headWidth = 2 * avatar.headHalfWidth
+                XCTAssertGreaterThan(Double(box.width), 0.7 * headWidth, "hat too small")
+                XCTAssertLessThan(Double(box.width), 1.9 * headWidth, "hat too big")
+                XCTAssertLessThan(Double(box.minY), avatar.eyeY, "hat sits on the head")
+                XCTAssertEqual(Double(box.midX), 0, accuracy: 0.08)
+            case .shoes:
+                XCTAssertEqual(Double(box.maxY), avatar.floorY, accuracy: 0.03, "shoes on the floor")
+                XCTAssertLessThan(Double(box.width), 0.3)
+            case .top:
+                XCTAssertLessThan(Double(box.minY), avatar.shoulderY)
+                XCTAssertGreaterThan(Double(box.maxY), avatar.waistY)
+            case .bottom:
+                XCTAssertEqual(Double(box.maxY), avatar.ankleY, accuracy: 0.05, "jeans reach the ankles")
+            default:
+                break
+            }
+        }
+    }
+
     func testSideOnPhotoStillYieldsCoreGarments() async throws {
         let parser = try await TestModel.parser()
         let result = try GarmentExtractor(parser: parser).extract(from: try Fixtures.image("outfit_side.jpg"))
@@ -155,14 +189,14 @@ final class PipelineTests: XCTestCase {
         for height in [152.0, 170, 192] {
             let avatar = AvatarModel(profile: BodyProfile(heightCM: height))
             let asset = FaceAsset(imageFile: "face.png", imageSize: size, eyeLeft: head.eyeLeft, eyeRight: head.eyeRight,
-                                  chin: head.chin, skinTone: head.skinTone)
+                                  chin: head.chin, skinTone: head.skinTone, yawDegrees: head.yawDegrees,
+                                  rollDegrees: head.rollDegrees, pitchDegrees: head.pitchDegrees)
             let placement = try XCTUnwrap(FaceFitter.placement(face: asset, avatar: avatar))
-            // Eyes level and the head exactly one anthropometric head-height tall
-            // (within 6% for real faces, whose eye/chin ratio varies).
+            // Eyes level and the head one anthropometric head-height tall.
             let l = placement.apply(head.eyeLeft), r = placement.apply(head.eyeRight)
             XCTAssertEqual(atan2(Double(r.y - l.y), Double(r.x - l.x)) * 180 / .pi, 0, accuracy: 1)
             let implied = FaceFitter.impliedHeadHeight(face: asset, placement: placement)
-            XCTAssertEqual(implied / avatar.headHeight, 1, accuracy: 0.06, "head height ratio at \(height) cm")
+            XCTAssertEqual(implied / avatar.headHeight, 1, accuracy: 0.03, "head height ratio at \(height) cm")
             // Chin sits on the avatar's neck.
             XCTAssertEqual(Double(placement.apply(head.chin).y), avatar.chinY, accuracy: avatar.headHeight * 0.08)
             XCTAssertEqual(Double(placement.apply(head.chin).x), 0, accuracy: avatar.headHeight * 0.08)

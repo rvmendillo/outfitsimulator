@@ -287,6 +287,18 @@ final class FittingTests: XCTestCase {
         XCTAssertEqual(fit.a, fit.d, accuracy: 1e-12)
     }
 
+    func testNarrowPupilDistanceNeverEnlargesTheHead() throws {
+        // Pupils 12% closer than average (or a turned head without yaw data):
+        // scale comes from eye-to-chin height alone, so head size stays exact.
+        var face = idealFace(pixelsPerUnit: 2000, for: avatar)
+        let mid = CGPoint.midpoint(face.eyeLeft, face.eyeRight)
+        face.eyeLeft = mid + (face.eyeLeft - mid) * 0.88
+        face.eyeRight = mid + (face.eyeRight - mid) * 0.88
+        let fit = try XCTUnwrap(FaceFitter.autoFit(face: face, avatar: avatar))
+        XCTAssertEqual(fit.meanScale, 1.0 / 2000, accuracy: 1e-12)
+        XCTAssertEqual(FaceFitter.impliedHeadHeight(face: face, placement: fit), avatar.headHeight, accuracy: 1e-9)
+    }
+
     func testDegenerateFaceReturnsNil() {
         let p = CGPoint(x: 10, y: 10)
         let face = FaceAsset(imageFile: "f.png", imageSize: CGSize(width: 10, height: 10), eyeLeft: p, eyeRight: p, chin: p, skinTone: .white)

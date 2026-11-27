@@ -92,6 +92,9 @@ struct OutfitCard: View {
         .padding(10)
         .brandCard()
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Opens the outfit in the Studio")
     }
 }
 

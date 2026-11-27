@@ -111,7 +111,7 @@ final class OutfitSimulatorUITests: XCTestCase {
         app.buttons["studio.save"].tap()
         let alert = app.alerts.firstMatch
         XCTAssertTrue(alert.waitForExistence(timeout: 5))
-        alert.buttons["Save"].tap()
+        alert.buttons["Save"].firstMatch.tap()
 
         // Outfits grid.
         app.tabBars.buttons["Outfits"].tap()

@@ -110,6 +110,7 @@ struct StudioView: View {
         .background(Capsule().fill(.ultraThinMaterial))
         .padding(.horizontal, 12)
         .padding(.top, 8)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("studio.selectionBar")
     }
 

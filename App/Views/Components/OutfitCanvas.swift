@@ -73,6 +73,15 @@ struct OutfitCanvas: View {
                              at: CGPoint(x: Double(b.x) - 4, y: Double(b.y) - 7), anchor: .trailing)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityDescription)
+        .accessibilityAddTraits(.isImage)
+    }
+
+    private var accessibilityDescription: String {
+        let pieces = scene.layers.compactMap(\.category).map(\.displayName.localizedLowercase)
+        let who = scene.drawsAvatarHead ? "Avatar" : "You"
+        return pieces.isEmpty ? who : "\(who) wearing \(pieces.joined(separator: ", "))"
     }
 
     static func mapping(scene: OutfitScene, bodyRect: CGRect?, size: CGSize, padding: Double = 0.04) -> CanvasMapping {

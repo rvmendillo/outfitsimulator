@@ -213,8 +213,12 @@ public enum FaceFitter {
 
         let verticalScale = (avatar.chinY - avatar.eyeY) / eyeToChin
         let horizontalScale = avatar.interpupillaryDistance / ipd
+        // Foreshortening only ever shrinks a measured distance. A pupil distance
+        // that is small for the face (head turned) must not enlarge the head, so
+        // it is used only when it argues for a smaller head (e.g. the eye-to-chin
+        // height was foreshortened by looking up or down).
         let turned = abs(face.yawDegrees ?? 0) > yawLimitForIPD
-        let w = turned ? 1.0 : verticalWeight
+        let w = (turned || horizontalScale >= verticalScale) ? 1.0 : verticalWeight
         let scale = exp(w * log(verticalScale) + (1 - w) * log(horizontalScale))
         guard scale.isFinite, scale > 0 else { return nil }
 
